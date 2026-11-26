@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workout">
+<title>Workout Nudge</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root{
+  --bg:#0f1115; --card:#181b22; --card2:#20242d; --line:#2b303b;
+  --text:#eef0f4; --muted:#9aa3b2; --accent:#ff6b35; --accent2:#ffb347;
+  --good:#3ecf8e; --rest:#4da3ff; --warn:#ffcc4d;
+  --r:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+body{padding:env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom))}
+main{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:26px;margin:8px 0 4px}
+h2{font-size:19px;margin:0}
+h3{font-size:15px;margin:16px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+p{margin:6px 0}
+.muted{color:var(--muted)} .small{font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:14px 0}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.wrap{flex-wrap:wrap}
+button,.btn{font:inherit;border:0;border-radius:12px;padding:12px 16px;background:var(--card2);color:var(--text);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+button:active{transform:scale(.98)}
+.primary{background:var(--accent);color:#fff;font-weight:700}
+.block{width:100%;padding:15px;font-size:17px}
+.ghost{background:transparent;border:1px solid var(--line)}
+.icon-btn{padding:8px 10px;font-size:14px;background:var(--card2)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:8px 14px;border-radius:999px;background:var(--card2);border:1px solid var(--line);font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.banner{border-radius:var(--r);padding:16px;background:linear-gradient(135deg,var(--accent),#e2471b);color:#fff}
+.banner.calm{background:linear-gradient(135deg,#2a3346,#1d2330)}
+.banner.done{background:linear-gradient(135deg,#1f8f63,#167050)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.stat{background:rgba(255,255,255,.12);border-radius:12px;padding:10px;text-align:center}
+.banner.calm .stat{background:var(--card2)}
+.stat b{display:block;font-size:22px}
+.stat span{font-size:12px;opacity:.85}
+.ex{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.ex:first-of-type{border-top:0}
+.ex .num{min-width:26px;height:26px;border-radius:50%;background:var(--card2);display:grid;place-items:center;font-size:13px;color:var(--muted);margin-top:2px}
+.ex .body{flex:1}
+.ex .name{font-weight:600}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:6px;background:var(--card2);color:var(--accent2);margin-right:4px}
+.tag.cardio{color:var(--rest)} .tag.core{color:var(--good)}
+details summary{cursor:pointer;color:var(--muted);font-size:14px;margin-top:8px}
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(15,17,21,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:10}
+nav button{flex:1;flex-direction:column;gap:2px;background:none;font-size:11px;color:var(--muted);padding:6px}
+nav button .i{font-size:21px;line-height:1}
+nav button.on{color:var(--accent)}
+.view{display:none}.view.on{display:block}
+input[type=time],select{font:inherit;background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.toggle{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.toggle:first-child{border-top:0}
+.switch{position:relative;width:50px;height:30px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.switch span{position:absolute;inset:0;background:var(--card2);border:1px solid var(--line);border-radius:30px;transition:.2s}
+.switch span:before{content:"";position:absolute;width:24px;height:24px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s}
+.switch input:checked+span{background:var(--good);border-color:var(--good)}
+.switch input:checked+span:before{transform:translateX(20px)}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+.day{text-align:center;font-size:12px;color:var(--muted)}
+.dot{width:30px;height:30px;margin:4px auto 0;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:14px}
+.dot.plan{border-color:var(--accent)}
+.dot.hit{background:var(--good);border-color:var(--good);color:#06291b}
+.dot.today{box-shadow:0 0 0 2px var(--text)}
+.log-item{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
+.log-item:first-child{border-top:0}
+.note{background:var(--card2);border-radius:12px;padding:12px;font-size:14px;color:var(--muted);margin-top:10px}
+.note b{color:var(--text)}
+
+/* Player */
+#player{position:fixed;inset:0;background:var(--bg);z-index:50;display:none;flex-direction:column;padding:calc(16px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom))}
+#player.on{display:flex}
+#player .top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:14px}
+#player .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}
+#p-kind{font-weight:800;letter-spacing:.12em;font-size:14px;text-transform:uppercase}
+#p-name{font-size:32px;font-weight:800;line-height:1.15;max-width:100%}
+#p-weight{color:var(--accent2);font-weight:600}
+#p-cue{color:var(--muted);max-width:420px;font-size:15px}
+.ring{position:relative;width:230px;height:230px}
+.ring svg{transform:rotate(-90deg)}
+.ring .t{position:absolute;inset:0;display:grid;place-items:center;font-size:72px;font-weight:800;font-variant-numeric:tabular-nums}
+#p-next{color:var(--muted);font-size:15px;min-height:22px}
+#p-bar{height:6px;background:var(--card2);border-radius:6px;overflow:hidden;margin:10px 0 14px}
+#p-bar div{height:100%;background:var(--accent);width:0}
+.pctl{display:grid;grid-template-columns:1fr 1.6fr 1fr;gap:10px}
+.pctl button{padding:16px;font-size:16px}
+#player.k-rest #p-kind{color:var(--rest)} #player.k-work #p-kind{color:var(--accent)}
+#player.k-warm #p-kind,#player.k-cool #p-kind{color:var(--good)}
+#done{position:fixed;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+#done.on{display:flex}
+#done .big{font-size:80px}
+</style>
+</head>
+<body>
+<main>
+
+<!-- TODAY -->
+<section id="v-today" class="view on">
+  <h1 id="hello">Let's move.</h1>
+  <div id="status"></div>
+
+  <div class="card">
+    <div class="row between">
+      <div><h2>30-min Circuit</h2><div class="muted small" id="c-meta"></div></div>
+      <button class="icon-btn" id="c-shuffle" title="New workout">🔀 New</button>
+    </div>
+    <div class="chips" id="focus-chips" style="margin-top:12px"></div>
+    <div id="c-list" style="margin-top:8px"></div>
+    <div class="note" id="c-format"></div>
+    <button class="primary block" style="margin-top:12px" id="c-start">▶ Start circuit</button>
+  </div>
+
+  <div class="card">
+    <div class="row between">
+      <div><h2>15-min Cardio + Abs</h2><div class="muted small" id="k-meta"></div></div>
+      <button class="icon-btn" id="k-shuffle">🔀 New</button>
+    </div>
+    <div id="k-list" style="margin-top:8px"></div>
+    <button class="primary block" style="margin-top:12px" id="k-start">▶ Start cardio + abs</button>
+  </div>
+
+  <button class="block ghost" id="both-start">🔥 Do both back-to-back (45 min)</button>
+</section>
+
+<!-- REMIND -->
+<section id="v-remind" class="view">
+  <h1>Reminders</h1>
+  <p class="muted">Pick your workout days and time. Your weekly goal = number of days you pick.</p>
+  <div class="card">
+    <h3 style="margin-top:0">Days</h3>
+    <div class="chips" id="day-chips"></div>
+    <h3>Time</h3>
+    <div class="row"><input type="time" id="r-time" value="07:00"><span class="muted small">+ a heads-up</span>
+      <select id="r-lead"><option value="0">at start</option><option value="15">15 min before</option><option value="30">30 min before</option><option value="60">1 hr before</option></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📅 Most reliable: add to your phone's calendar</h2>
+    <p class="muted small">Your calendar will alert you even when this app is closed. Re-do this if you change your days or time.</p>
+    <button class="primary block" id="ics" style="margin-top:10px">Add to iPhone / Apple / Outlook calendar</button>
+    <a class="btn block ghost" id="gcal" target="_blank" rel="noopener" style="margin-top:8px">Add to Google Calendar</a>
+  </div>
+
+  <div class="card">
+    <h2>🔔 App notifications</h2>
+    <p class="muted small" id="n-status"></p>
+    <button class="block" id="n-enable" style="margin-top:10px">Turn on notifications</button>
+    <button class="block ghost" id="n-test" style="margin-top:8px">Send a test notification</button>
+    <div class="note">Phones only let web apps send notifications in limited cases: <b>iPhone</b> needs the app added to your Home Screen first (Share → Add to Home Screen). <b>Android/Chrome</b> can check in the background once installed, but timing isn't guaranteed. That's why the calendar option above is the backup you can count on.</div>
+  </div>
+</section>
+
+<!-- LOG -->
+<section id="v-log" class="view">
+  <h1>Progress</h1>
+  <div class="card">
+    <div class="row between"><h2>This week</h2><span class="muted" id="wk-count"></span></div>
+    <div class="week" id="week"></div>
+  </div>
+  <div class="card">
+    <div class="stats" style="margin-top:0">
+      <div class="stat" style="background:var(--card2)"><b id="s-total">0</b><span>workouts</span></div>
+      <div class="stat" style="background:var(--card2)"><b id="s-min">0</b><span>minutes</span></div>
+      <div class="stat" style="background:var(--card2)"><b id="s-streak">0</b><span>week streak</span></div>
+    </div>
+  </div>
+  <div class="card"><h2>History</h2><div id="history" style="margin-top:8px"></div></div>
+  <button class="block ghost" id="manual-log">+ Log a workout I did on my own</button>
+</section>
+
+<!-- GEAR / SETTINGS -->
+<section id="v-gear" class="view">
+  <h1>Gear & Settings</h1>
+  <div class="card">
+    <h3 style="margin-top:0">Your equipment</h3>
+    <div class="note" style="margin-top:0">Dumbbells: <b>35 lb</b>, <b>10 lb</b> pair, <b>8 lb</b> pair · Bands: <b>15 / 10 / 5 lb</b></div>
+    <div class="toggle"><div><b>Jump rope</b><div class="muted small">Adds rope intervals with beginner-friendly cues</div></div><label class="switch"><input type="checkbox" id="g-rope"><span></span></label></div>
+    <div class="toggle"><div><b>Punching bag</b><div class="muted small">Turn on when it arrives — adds bag rounds</div></div><label class="switch"><input type="checkbox" id="g-bag"><span></span></label></div>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Intensity</h3>
+    <div class="chips" id="lvl-chips"></div>
+    <p class="muted small" id="lvl-desc" style="margin-top:8px"></p>
+  </div>
+  <div class="card">
+    <div class="toggle"><div><b>Voice coach</b><div class="muted small">Announces each exercise</div></div><label class="switch"><input type="checkbox" id="g-voice"><span></span></label></div>
+    <div class="toggle"><div><b>Beeps</b><div class="muted small">3-2-1 countdown</div></div><label class="switch"><input type="checkbox" id="g-beep"><span></span></label></div>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Jump rope starter tips</h3>
+    <ul class="muted small" style="padding-left:18px;margin:0">
+      <li>Sizing: stand on the middle of the rope — handles should reach your armpits.</li>
+      <li>Small hops, 1–2 inches off the ground, on the balls of your feet.</li>
+      <li>Turn the rope with your wrists, elbows close to your sides.</li>
+      <li>Tripping is normal. Just reset and keep going — or jump without the rope until the timer ends.</li>
+    </ul>
+  </div>
+  <button class="block ghost" id="reset" style="color:#ff8080">Reset all data</button>
+</section>
+
+</main>
+
+<nav>
+  <button data-v="today" class="on"><span class="i">🏋️</span>Workout</button>
+  <button data-v="remind"><span class="i">⏰</span>Remind</button>
+  <button data-v="log"><span class="i">📈</span>Progress</button>
+  <button data-v="gear"><span class="i">⚙️</span>Gear</button>
+</nav>
+
+<!-- PLAYER -->
+<div id="player">
+  <div class="top"><span id="p-title"></span><span id="p-left"></span></div>
+  <div id="p-bar"><div></div></div>
+  <div class="center">
+    <div id="p-kind"></div>
+    <div id="p-name"></div>
+    <div id="p-weight"></div>
+    <div class="ring">
+      <svg width="230" height="230"><circle cx="115" cy="115" r="104" stroke="#20242d" stroke-width="14" fill="none"/>
+        <circle id="p-arc" cx="115" cy="115" r="104" stroke="#ff6b35" stroke-width="14" fill="none" stroke-linecap="round" stroke-dasharray="653.45" stroke-dashoffset="0"/></svg>
+      <div class="t" id="p-time">0</div>
+    </div>
+    <div id="p-cue"></div>
+    <div id="p-next"></div>
+  </div>
+  <div class="pctl">
+    <button id="p-back">⏮</button>
+    <button class="primary" id="p-pause">Pause</button>
+    <button id="p-skip">⏭</button>
+  </div>
+  <button class="ghost block" id="p-quit" style="margin-top:10px">End workout</button>
+</div>
+
+<div id="done">
+  <div class="big">🏆</div>
+  <h1 id="d-title">Workout complete!</h1>
+  <p class="muted" id="d-sub"></p>
+  <button class="primary block" id="d-ok" style="max-width:320px;margin-top:20px">Nice</button>
+</div>
+
+<script>
+/* ================= EXERCISE LIBRARY =================
+   c = category, w = weight/equipment, needs = optional gear */
+const LIB = [
+  // LOWER
+  {n:'Goblet Squat',c:'lower',w:'35 lb DB',cue:'DB at chest, sit hips back and down, chest tall, drive through heels.'},
+  {n:'Dumbbell Romanian Deadlift',c:'lower',w:'35 lb DB (both hands)',cue:'Soft knees, push hips back, DB slides down thighs, squeeze glutes to stand.'},
+  {n:'Reverse Lunge',c:'lower',w:'10 lb DBs',cue:'Step back, both knees to ~90°, push through front heel. Alternate legs.'},
+  {n:'Sumo Squat',c:'lower',w:'35 lb DB',cue:'Wide stance, toes out, DB hanging between legs, sit straight down.'},
+  {n:'Banded Glute Bridge',c:'lower',w:'15 lb band above knees',cue:'Feet flat, push knees out against band, drive hips up, squeeze 1 sec.'},
+  {n:'Banded Lateral Walk',c:'lower',w:'10 lb band',cue:'Half-squat, step sideways keeping tension. 4 steps each way.'},
+  {n:'Bulgarian Split Squat',c:'lower',w:'8 lb DBs',cue:'Back foot on couch/chair, lower straight down. Switch legs halfway.'},
+  {n:'Single-Leg RDL',c:'lower',w:'10 lb DB',cue:'Hinge on one leg, free leg reaches back, hips square. Switch halfway.'},
+  {n:'Goblet Wall Sit',c:'lower',w:'35 lb DB',cue:'Back on wall, thighs parallel, hold DB at chest. Breathe.'},
+  {n:'Step-Ups',c:'lower',w:'10 lb DBs',cue:'Sturdy step or stair, drive through top foot, alternate legs.'},
+  // PUSH
+  {n:'Push-Ups',c:'push',w:'Bodyweight',cue:'Hands under shoulders, body straight. Drop to knees when needed.'},
+  {n:'Single-Arm Floor Press',c:'push',w:'35 lb DB',cue:'Lie on floor, press DB up, elbow at 45°. Switch arms halfway.'},
+  {n:'Overhead Press',c:'push',w:'10 lb DBs',cue:'Ribs down, press straight up, biceps by ears.'},
+  {n:'Arnold Press',c:'push',w:'8 lb DBs',cue:'Start palms facing you, rotate out as you press overhead.'},
+  {n:'Lateral Raise',c:'push',w:'8 lb DBs',cue:'Slight bend in elbows, raise to shoulder height, slow down.'},
+  {n:'Band Chest Press',c:'push',w:'15 lb band',cue:'Band behind your back, press forward and squeeze chest.'},
+  {n:'Pike Push-Ups',c:'push',w:'Bodyweight',cue:'Hips high, lower head toward floor between hands.'},
+  // PULL
+  {n:'Single-Arm Row',c:'pull',w:'35 lb DB',cue:'Hand on couch/chair, flat back, pull DB to hip. Switch halfway.'},
+  {n:'Band Pull-Apart',c:'pull',w:'5 or 10 lb band',cue:'Arms straight at chest height, pull band to chest, squeeze shoulder blades.'},
+  {n:'Band Seated Row',c:'pull',w:'15 lb band',cue:'Band around feet, sit tall, pull elbows back past ribs.'},
+  {n:'Reverse Fly',c:'pull',w:'8 lb DBs',cue:'Hinge forward, arms out wide like wings, squeeze upper back.'},
+  {n:'Band Face Pull',c:'pull',w:'10 lb band',cue:'Anchor band at face height (door), pull to forehead, elbows high.'},
+  {n:'Band Lat Pulldown',c:'pull',w:'15 lb band',cue:'Anchor band high (top of door), pull elbows down to ribs.'},
+  {n:'Bent-Over Row',c:'pull',w:'10 lb DBs',cue:'Hinge to 45°, pull both DBs to hips, pause at top.'},
+  // ARMS
+  {n:'Bicep Curl',c:'arms',w:'10 lb DBs',cue:'Elbows pinned to sides, curl up, slow on the way down.'},
+  {n:'Hammer Curl',c:'arms',w:'10 lb DBs',cue:'Palms face each other, curl up, no swinging.'},
+  {n:'Overhead Tricep Extension',c:'arms',w:'35 lb DB (both hands)',cue:'Hold one end overhead, lower behind head, extend up.'},
+  {n:'Band Tricep Pushdown',c:'arms',w:'10 lb band',cue:'Anchor band high, elbows at sides, push down to straight arms.'},
+  {n:'Tricep Kickback',c:'arms',w:'8 lb DBs',cue:'Hinge forward, upper arms still, extend arms back.'},
+  // FULL BODY
+  {n:'Dumbbell Thruster',c:'full',w:'10 lb DBs',cue:'Front squat then drive up into an overhead press in one move.'},
+  {n:'Dumbbell Swing',c:'full',w:'35 lb DB',cue:'Hinge, hike DB back, snap hips forward to chest height. Power from hips.'},
+  {n:'Squat to Curl to Press',c:'full',w:'8 lb DBs',cue:'Squat, stand and curl, then press overhead.'},
+  {n:'Renegade Row',c:'full',w:'10 lb DBs',cue:'High plank on DBs, row one side then the other, hips steady.'},
+  {n:'Dumbbell Woodchop',c:'full',w:'10 lb DB',cue:'Diagonal chop from high shoulder to opposite knee. Switch halfway.'},
+  {n:'Clean & Press',c:'full',w:'10 lb DBs',cue:'Pull DBs from knees to shoulders, then press overhead.'},
+  // CORE
+  {n:'Plank',c:'core',w:'Bodyweight',cue:'Elbows under shoulders, squeeze glutes, don\'t let hips sag.'},
+  {n:'Dead Bug',c:'core',w:'Bodyweight',cue:'Low back pressed to floor, extend opposite arm and leg slowly.'},
+  {n:'Russian Twist',c:'core',w:'10 lb DB',cue:'Lean back, feet up or down, rotate DB side to side.'},
+  {n:'Bicycle Crunch',c:'core',w:'Bodyweight',cue:'Elbow toward opposite knee, slow and controlled.'},
+  {n:'Leg Raises',c:'core',w:'Bodyweight',cue:'Low back down, lower legs slowly, stop before back arches.'},
+  {n:'Hollow Hold',c:'core',w:'Bodyweight',cue:'Arms and legs extended, low back glued to floor. Bend knees to make easier.'},
+  {n:'Side Plank (switch halfway)',c:'core',w:'Bodyweight',cue:'Stack feet, hips high, switch sides at halfway.'},
+  {n:'Band Pallof Press',c:'core',w:'10 lb band',cue:'Band anchored to side, press straight out, resist the twist. Switch halfway.'},
+  {n:'Weighted Sit-Up',c:'core',w:'8 lb DB',cue:'Hold DB at chest, sit all the way up, lower slowly.'},
+  {n:'Flutter Kicks',c:'core',w:'Bodyweight',cue:'Legs low, small fast kicks, low back down.'},
+  {n:'Plank Shoulder Taps',c:'core',w:'Bodyweight',cue:'High plank, tap opposite shoulder, keep hips still.'},
+  {n:'V-Up Toe Touch',c:'core',w:'8 lb DB',cue:'Lie flat, reach DB to toes at top.'},
+  {n:'Mountain Climbers',c:'core',w:'Bodyweight',cue:'High plank, drive knees to chest fast.'},
+  // CARDIO
+  {n:'Jump Rope — Basic Bounce',c:'cardio',w:'Jump rope',needs:'rope',cue:'Small hops, wrists turn the rope. Trip? Reset and go again.'},
+  {n:'Jump Rope — Alternate Feet',c:'cardio',w:'Jump rope',needs:'rope',cue:'Jog in place over the rope, light and quick.'},
+  {n:'Jump Rope — Side to Side',c:'cardio',w:'Jump rope',needs:'rope',cue:'Hop a few inches left and right each turn.'},
+  {n:'Jump Rope — Steady Pace',c:'cardio',w:'Jump rope',needs:'rope',cue:'Find a rhythm you can hold. Breathe through your nose if you can.'},
+  {n:'Bag — Jab, Cross',c:'cardio',w:'Punching bag',needs:'bag',cue:'Fists up, 1-2 combos, turn your back hip into the cross. Exhale on each punch.'},
+  {n:'Bag — Speed Punches',c:'cardio',w:'Punching bag',needs:'bag',cue:'Fast, light straight punches. Stay on your toes.'},
+  {n:'Bag — 1-2-Hook-Uppercut',c:'cardio',w:'Punching bag',needs:'bag',cue:'Jab, cross, lead hook, rear uppercut. Reset and repeat.'},
+  {n:'Bag — Power Hooks',c:'cardio',w:'Punching bag',needs:'bag',cue:'Alternate hooks, pivot your feet, elbows at shoulder height.'},
+  {n:'Bag — Body Shots',c:'cardio',w:'Punching bag',needs:'bag',cue:'Bend knees, alternate hooks to the lower bag.'},
+  {n:'Shadow Boxing',c:'cardio',w:'Bodyweight',cue:'Jab, cross, hook, bob and weave. Keep your hands up.'},
+  {n:'High Knees',c:'cardio',w:'Bodyweight',cue:'Knees to hip height, pump arms, stay on balls of feet.'},
+  {n:'Jumping Jacks',c:'cardio',w:'Bodyweight',cue:'Steady rhythm, full arm swing.'},
+  {n:'Burpees',c:'cardio',w:'Bodyweight',cue:'Chest down, pop up, jump. Step back instead of jumping to modify.'},
+  {n:'Skaters',c:'cardio',w:'Bodyweight',cue:'Leap side to side, land soft on one leg.'},
+  {n:'Squat Jumps',c:'cardio',w:'Bodyweight',cue:'Squat, explode up, land softly back into the squat.'},
+  {n:'Fast Feet',c:'cardio',w:'Bodyweight',cue:'Quick little steps in place, low and athletic.'},
+];
+const WARMUP = [
+  {n:'Easy Jog in Place / Easy Rope',cue:'Get the blood moving. Easy pace.',w:''},
+  {n:'Arm Circles + Bodyweight Squats',cue:'10 arm circles each way, then slow squats.',w:''},
+  {n:'Inchworms + Hip Openers',cue:'Walk hands out to plank and back. Then hip circles.',w:''},
+];
+const COOLDOWN = [
+  {n:'Hamstring & Quad Stretch',cue:'30 sec each. Breathe slow.',w:''},
+  {n:'Chest & Shoulder Stretch',cue:'Doorway chest stretch, cross-body shoulder stretch.',w:''},
+  {n:'Child\'s Pose',cue:'Sink hips back, arms long. Big breaths.',w:''},
+];
+const FOCUS = {
+  full: {label:'Full Body', pattern:['lower','push','pull','full','lower','core']},
+  upper:{label:'Upper',     pattern:['push','pull','arms','push','pull','core']},
+  lower:{label:'Lower',     pattern:['lower','lower','full','lower','lower','core']},
+};
+const LEVELS = {
+  easy:{label:'Starter', work:40, rest:20, kWork:40, kRest:20, desc:'40s work / 20s rest. Great for your first couple of weeks.'},
+  std: {label:'Standard',work:45, rest:15, kWork:45, kRest:15, desc:'45s work / 15s rest.'},
+  hard:{label:'Push it', work:50, rest:10, kWork:50, kRest:10, desc:'50s work / 10s rest. Go up in band/DB weight when this feels easy.'},
+};
+const ROUNDS = 4;
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const ICAL_DAYS = ['SU','MO','TU','WE','TH','FR','SA'];
+
+/* ================= STATE ================= */
+const DEFAULTS = {
+  rope:true, bag:false, level:'easy', voice:true, beep:true,
+  days:[1,3,5], time:'07:00', lead:'0',
+  log:[], circuit:null, cardio:null, focus:null, notified:''
+};
+let S;
+try{ S = Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('wn') || '{}')); }catch(e){ S = {...DEFAULTS}; }
+function save(){ try{ localStorage.setItem('wn', JSON.stringify(S)); }catch(e){} syncSW(); }
+
+const $ = s => document.querySelector(s);
+const rand = a => a[Math.floor(Math.random()*a.length)];
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const dkey = d => { d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const hasGear = e => !e.needs || S[e.needs];
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ================= GENERATORS ================= */
+function nextFocus(){
+  const last = [...S.log].reverse().find(l => l.focus);
+  const order = ['full','upper','lower'];
+  return last ? order[(order.indexOf(last.focus)+1)%3] : 'full';
+}
+function genCircuit(focus){
+  const used = new Set();
+  const ex = FOCUS[focus].pattern.map(cat => {
+    const pool = LIB.filter(e => e.c===cat && hasGear(e) && !used.has(e.n));
+    const pick = rand(pool); used.add(pick.n); return pick.n;
+  });
+  return {focus, ex};
+}
+function genCardio(){
+  let cardio = LIB.filter(e => e.c==='cardio' && hasGear(e));
+  // weight rope + bag so they show up often when you have them
+  const weighted = [...cardio, ...cardio.filter(e=>e.needs)];
+  const core = shuffle(LIB.filter(e => e.c==='core'));
+  const out = []; let cq = shuffle(weighted), ci = 0, ai = 0, prev = '';
+  for(let i=0;i<15;i++){
+    if(i%2===0){
+      let pick; let tries=0;
+      do{ if(ci>=cq.length){cq=shuffle(weighted);ci=0;} pick=cq[ci++]; tries++; }
+      while((pick.n===prev || out.filter(x=>x===pick.n).length>=2) && tries<40);
+      out.push(pick.n); prev=pick.n;
+    } else { out.push(core[ai++ % core.length].n); }
+  }
+  return out;
+}
+const byName = n => LIB.find(e=>e.n===n);
+function ensurePlans(){
+  if(!S.focus) S.focus = nextFocus();
+  if(!S.circuit || S.circuit.focus!==S.focus || S.circuit.ex.some(n=>!byName(n)||!hasGear(byName(n)))) S.circuit = genCircuit(S.focus);
+  if(!S.cardio || S.cardio.some(n=>!byName(n)||!hasGear(byName(n)))) S.cardio = genCardio();
+  save();
+}
+
+/* ================= RENDER: TODAY ================= */
+function exRow(e, i, swapAttr){
+  const tagCls = e.c==='cardio'?'cardio':e.c==='core'?'core':'';
+  return `<div class="ex"><div class="num">${i}</div><div class="body">
+    <div class="name">${esc(e.n)}</div>
+    <span class="tag ${tagCls}">${esc(e.w)}</span>
+    <div class="muted small">${esc(e.cue)}</div></div>
+    ${swapAttr?`<button class="icon-btn" ${swapAttr} title="Swap">↻</button>`:''}</div>`;
+}
+function renderToday(){
+  ensurePlans();
+  const h = new Date().getHours();
+  $('#hello').textContent = h<12?'Good morning 💪':h<17?'Good afternoon 💪':'Good evening 💪';
+  // status banner
+  const today = new Date(), dow = today.getDay();
+  const doneToday = S.log.some(l => l.date===dkey());
+  const wk = weekCount(), goal = S.days.length || 3;
+  const planned = S.days.includes(dow);
+  let cls='calm', msg;
+  if(doneToday){ cls='done'; msg='<b>Done for today.</b> That\'s how it\'s built. 🙌'; }
+  else if(planned){ cls=''; msg=`<b>Today is a workout day.</b> ${wk>=goal?'You already hit your goal — bonus round!':'Just start the timer. 30 minutes. Go.'}`; }
+  else { msg = wk>=goal ? '<b>Rest day.</b> You hit your goal this week. 🎉' : `<b>Not a scheduled day</b> — but ${goal-wk} to go this week. A bonus session counts!`; }
+  $('#status').innerHTML = `<div class="banner ${cls}">${msg}
+    <div class="stats"><div class="stat"><b>${wk}/${goal}</b><span>this week</span></div>
+    <div class="stat"><b>${streak()}</b><span>week streak</span></div>
+    <div class="stat"><b>${S.log.length}</b><span>total</span></div></div></div>`;
+
+  // circuit
+  const L = LEVELS[S.level];
+  $('#focus-chips').innerHTML = Object.entries(FOCUS).map(([k,f]) => `<button class="chip ${S.focus===k?'on':''}" data-focus="${k}">${f.label}</button>`).join('');
+  $('#c-meta').textContent = `${FOCUS[S.focus].label} · ${ROUNDS} rounds · ${L.work}s on / ${L.rest}s off`;
+  $('#c-list').innerHTML = S.circuit.ex.map((n,i)=>exRow(byName(n), i+1, `data-swap="${i}"`)).join('');
+  $('#c-format').innerHTML = `<b>Format:</b> 3-min warm-up → ${ROUNDS} rounds of these 6 moves (6 min per round) → 3-min stretch = <b>30 min</b>.`;
+
+  // cardio
+  $('#k-meta').textContent = `15 × 1-min intervals · ${L.kWork}s on / ${L.kRest}s off · alternating cardio & abs`;
+  $('#k-list').innerHTML = S.cardio.map((n,i)=>exRow(byName(n), i+1, `data-kswap="${i}"`)).join('');
+}
+
+/* ================= WORKOUT STEPS ================= */
+function circuitSteps(){
+  const L = LEVELS[S.level], st = [];
+  WARMUP.forEach((e,i)=>st.push({...e, dur:60, kind:'warm', label:`Warm-up ${i+1}/3`}));
+  for(let r=1;r<=ROUNDS;r++){
+    S.circuit.ex.forEach((n,i)=>{
+      const e = byName(n);
+      st.push({n:e.n, w:e.w, cue:e.cue, dur:L.work, kind:'work', label:`Round ${r}/${ROUNDS} · Move ${i+1}/6`});
+      const lastOfRound = i===5;
+      if(!(r===ROUNDS && lastOfRound)) st.push({n: lastOfRound?`Round ${r} done — sip water`:'Rest', dur:L.rest, kind:'rest', label:`Round ${r}/${ROUNDS}`});
+    });
+  }
+  // fill the final rest slot into cooldown length to keep 30:00
+  COOLDOWN.forEach((e,i)=>st.push({...e, dur: i===0 ? 60+L.rest : 60, kind:'cool', label:`Cool-down ${i+1}/3`}));
+  return st;
+}
+function cardioSteps(){
+  const L = LEVELS[S.level], st = [];
+  S.cardio.forEach((n,i)=>{
+    const e = byName(n);
+    st.push({n:e.n, w:e.w, cue:e.cue, dur:L.kWork, kind:'work', label:`Interval ${i+1}/15 · ${e.c==='cardio'?'Cardio':'Abs'}`});
+    st.push({n: i===14 ? 'Breathe — you\'re done' : 'Rest', dur:L.kRest, kind: i===14?'cool':'rest', label:`Interval ${i+1}/15`});
+  });
+  return st;
+}
+
+/* ================= PLAYER ================= */
+let P = null, audio = null, wakeLock = null;
+function beep(freq=880, ms=120, vol=.25){
+  if(!S.beep || !audio) return;
+  const o = audio.createOscillator(), g = audio.createGain();
+  o.frequency.value = freq; o.type='sine'; g.gain.value = vol;
+  o.connect(g); g.connect(audio.destination); o.start();
+  g.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + ms/1000);
+  o.stop(audio.currentTime + ms/1000 + .02);
+}
+function say(t){
+  if(!S.voice || !('speechSynthesis' in window)) return;
+  try{ speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.rate=1.05; speechSynthesis.speak(u);}catch(e){}
+}
+async function lockScreen(){ try{ if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); }catch(e){} }
+document.addEventListener('visibilitychange', ()=>{ if(P && !P.paused && document.visibilityState==='visible') lockScreen(); });
+
+function startWorkout(sessions){
+  try{ audio = audio || new (window.AudioContext||window.webkitAudioContext)(); audio.resume(); }catch(e){}
+  let steps = [];
+  sessions.forEach(s => steps = steps.concat(s==='circuit'?circuitSteps():cardioSteps()));
+  steps.forEach((s,i)=>{ s.next = steps[i+1]; });
+  const total = steps.reduce((a,s)=>a+s.dur,0);
+  P = {sessions, steps, i:0, endAt:0, remain:steps[0].dur, paused:false, total, timer:null, lastSec:null};
+  $('#p-title').textContent = sessions.length>1 ? 'Circuit + Cardio/Abs' : sessions[0]==='circuit' ? `${FOCUS[S.focus].label} Circuit` : 'Cardio + Abs';
+  $('#player').classList.add('on');
+  lockScreen();
+  enterStep(0);
+  P.timer = setInterval(tick, 200);
+}
+function enterStep(i){
+  P.i = i; const s = P.steps[i];
+  P.remain = s.dur; P.endAt = Date.now() + s.dur*1000; P.lastSec = null;
+  const pl = $('#player'); pl.className = 'on k-'+s.kind;
+  $('#p-kind').textContent = s.kind==='work' ? 'Work · '+s.label : s.kind==='rest' ? 'Rest' : s.label;
+  $('#p-name').textContent = s.n;
+  $('#p-weight').textContent = s.w || '';
+  $('#p-cue').textContent = s.cue || '';
+  $('#p-arc').setAttribute('stroke', s.kind==='rest'?'#4da3ff':s.kind==='work'?'#ff6b35':'#3ecf8e');
+  if(s.kind==='rest' && s.next){
+    $('#p-next').innerHTML = `Up next: <b style="color:var(--text)">${esc(s.next.n)}</b>${s.next.w?' · '+esc(s.next.w):''}`;
+    $('#p-weight').textContent = '';
+    $('#p-cue').textContent = s.next.cue || '';
+    say((s.n.startsWith('Round')?s.n+'. ':'Rest. ')+'Next up, '+s.next.n);
+  } else {
+    $('#p-next').innerHTML = s.next ? `Then: ${esc(s.next.kind==='rest' && s.next.next ? s.next.next.n : s.next.n)}` : 'Last one!';
+    say(s.n);
+  }
+  if(i>0){ beep(s.kind==='work'?1200:660, 350, .3); vibrate(s.kind==='work'?[200,80,200]:[300]); }
+  renderTick();
+}
+function vibrate(p){ try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} }
+function tick(){
+  if(!P || P.paused) return;
+  P.remain = Math.max(0, (P.endAt - Date.now())/1000);
+  const sec = Math.ceil(P.remain);
+  if(sec !== P.lastSec){ if(sec<=3 && sec>0) beep(880,120); P.lastSec = sec; }
+  if(P.remain <= 0){
+    if(P.i >= P.steps.length-1) return finishWorkout(true);
+    enterStep(P.i+1); return;
+  }
+  renderTick();
+}
+function renderTick(){
+  const s = P.steps[P.i];
+  $('#p-time').textContent = Math.ceil(P.remain);
+  $('#p-arc').setAttribute('stroke-dashoffset', 653.45 * (1 - P.remain / s.dur));
+  const elapsed = P.steps.slice(0,P.i).reduce((a,x)=>a+x.dur,0) + (s.dur - P.remain);
+  const left = Math.max(0, P.total - elapsed);
+  $('#p-left').textContent = `${Math.floor(left/60)}:${String(Math.floor(left%60)).padStart(2,'0')} left`;
+  $('#p-bar div').style.width = (100*elapsed/P.total)+'%';
+}
+function togglePause(){
+  if(!P) return;
+  P.paused = !P.paused;
+  if(P.paused){ $('#p-pause').textContent='Resume'; try{speechSynthesis.cancel()}catch(e){} }
+  else { P.endAt = Date.now() + P.remain*1000; $('#p-pause').textContent='Pause'; }
+}
+function finishWorkout(complete){
+  clearInterval(P.timer);
+  try{ wakeLock && wakeLock.release(); }catch(e){}
+  $('#player').classList.remove('on');
+  const elapsed = P.steps.slice(0,P.i).reduce((a,x)=>a+x.dur,0) + (P.steps[P.i].dur - P.remain);
+  const mins = Math.round(elapsed/60);
+  const sessions = P.sessions; P = null;
+  if(!complete && mins < 5){ renderAll(); return; }
+  const entry = {date:dkey(), ts:Date.now(), mins, type:sessions.join('+'), complete};
+  if(sessions.includes('circuit')) entry.focus = S.focus;
+  S.log.push(entry);
+  // queue fresh workouts for next time
+  if(sessions.includes('circuit')){ S.focus = nextFocus(); S.circuit = genCircuit(S.focus); }
+  if(sessions.includes('cardio')) S.cardio = genCardio();
+  save();
+  beep(1320,500,.3); vibrate([200,100,200,100,400]);
+  say(complete ? 'Workout complete. Great job.' : 'Logged. Every minute counts.');
+  $('#d-title').textContent = complete ? 'Workout complete!' : 'Logged — nice work';
+  const wk = weekCount(), goal = S.days.length||3;
+  $('#d-sub').textContent = `${mins} minutes. ${wk}/${goal} this week.` + (wk===goal ? ' Weekly goal hit! 🎉' : wk>goal ? ' Above and beyond.' : '');
+  $('#done').classList.add('on');
+}
+
+/* ================= PROGRESS ================= */
+function weekStart(d){ d = new Date(d); d.setHours(0,0,0,0); const off=(d.getDay()+6)%7; d.setDate(d.getDate()-off); return d; }
+function weekCount(ref){
+  const ws = weekStart(ref||new Date()), we = new Date(ws); we.setDate(we.getDate()+7);
+  return new Set(S.log.filter(l=>{const t=new Date(l.date+'T12:00');return t>=ws&&t<we;}).map(l=>l.date)).size;
+}
+function streak(){
+  const goal = S.days.length||3; let n = 0; const d = new Date();
+  if(weekCount(d) >= goal) n++;
+  d.setDate(d.getDate()-7);
+  while(weekCount(d) >= goal){ n++; d.setDate(d.getDate()-7); }
+  return n;
+}
+function renderLog(){
+  const ws = weekStart(new Date()); const tk = dkey();
+  const dates = new Set(S.log.map(l=>l.date));
+  let html=''; let cnt=0;
+  for(let i=0;i<7;i++){
+    const d = new Date(ws); d.setDate(d.getDate()+i); const k = dkey(d);
+    const hit = dates.has(k); if(hit) cnt++;
+    html += `<div class="day">${DAYS[d.getDay()]}<div class="dot ${hit?'hit':''} ${S.days.includes(d.getDay())?'plan':''} ${k===tk?'today':''}">${hit?'✓':d.getDate()}</div></div>`;
+  }
+  $('#week').innerHTML = html;
+  $('#wk-count').textContent = `${cnt} / ${S.days.length||3} goal`;
+  $('#s-total').textContent = S.log.length;
+  $('#s-min').textContent = S.log.reduce((a,l)=>a+(l.mins||0),0);
+  $('#s-streak').textContent = streak();
+  const names = {circuit:'Circuit', cardio:'Cardio + Abs', 'circuit+cardio':'Circuit + Cardio/Abs', manual:'Own workout'};
+  $('#history').innerHTML = S.log.length ? [...S.log].reverse().slice(0,40).map(l=>{
+    const d = new Date(l.date+'T12:00');
+    return `<div class="log-item"><div><b>${names[l.type]||l.type}</b>${l.focus&&l.type!=='cardio'?` <span class="muted small">· ${FOCUS[l.focus].label}</span>`:''}
+      <div class="muted small">${d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</div></div><div class="muted">${l.mins} min</div></div>`;
+  }).join('') : '<p class="muted">No workouts yet. Your first one is the hardest — go get it.</p>';
+}
+
+/* ================= REMINDERS ================= */
+function renderRemind(){
+  $('#day-chips').innerHTML = [1,2,3,4,5,6,0].map(d=>`<button class="chip ${S.days.includes(d)?'on':''}" data-day="${d}">${DAYS[d]}</button>`).join('');
+  $('#r-time').value = S.time; $('#r-lead').value = S.lead;
+  $('#gcal').href = gcalUrl();
+  const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  $('#n-status').textContent =
+    perm==='granted' ? 'Notifications are on. You\'ll get a nudge at your workout time when your phone allows it.' :
+    perm==='denied' ? 'Notifications are blocked. Turn them on in your phone\'s settings for this app.' :
+    perm==='unsupported' ? (standalone ? 'This browser doesn\'t support notifications.' : 'Add this app to your Home Screen first, then reopen it from there to turn on notifications.') :
+    'Get a ping on your workout days.';
+  $('#n-enable').style.display = perm==='default' ? '' : 'none';
+  $('#n-test').style.display = perm==='granted' ? '' : 'none';
+}
+function firstOccurrence(){
+  const [hh,mm] = S.time.split(':').map(Number);
+  const d = new Date(); d.setHours(hh,mm,0,0);
+  for(let i=0;i<8;i++){ if(S.days.includes(d.getDay()) && d > new Date()) return d; d.setDate(d.getDate()+1); }
+  return d;
+}
+const icsDate = d => d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'T'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')+'00';
+function rrule(){ return 'FREQ=WEEKLY;BYDAY=' + [...S.days].sort().map(d=>ICAL_DAYS[d]).join(','); }
+function makeICS(){
+  const start = firstOccurrence(), end = new Date(start.getTime()+45*60000);
+  const now = new Date(); const stamp = now.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  const lead = Number(S.lead);
+  const alarm = (trig) => ['BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Workout time 💪',`TRIGGER:${trig}`,'END:VALARM'];
+  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Workout Nudge//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT',
+    `UID:workout-nudge-${Date.now()}@local`, `DTSTAMP:${stamp}`, `DTSTART:${icsDate(start)}`, `DTEND:${icsDate(end)}`,
+    `RRULE:${rrule()}`, 'SUMMARY:💪 Workout time', 'DESCRIPTION:30-min circuit + 15-min cardio/abs. Open the Workout app and hit start.',
+    ...alarm('PT0M'), ...(lead ? alarm(`-PT${lead}M`) : []), 'END:VEVENT','END:VCALENDAR'];
+  return lines.join('\r\n');
+}
+function gcalUrl(){
+  if(!S.days.length) return '#';
+  const start = firstOccurrence(), end = new Date(start.getTime()+45*60000);
+  const p = new URLSearchParams({action:'TEMPLATE', text:'💪 Workout time', details:'30-min circuit + 15-min cardio/abs. Open the Workout app and hit start.',
+    dates:`${icsDate(start)}/${icsDate(end)}`, recur:'RRULE:'+rrule(), ctz:Intl.DateTimeFormat().resolvedOptions().timeZone||''});
+  return 'https://calendar.google.com/calendar/render?'+p.toString();
+}
+
+/* ---- notifications (best effort) ---- */
+let swReg = null;
+async function notify(title, body){
+  try{
+    if(swReg) return swReg.showNotification(title,{body, icon:'icons/icon-192.png', badge:'icons/icon-192.png', tag:'workout', vibrate:[200,100,200]});
+    new Notification(title,{body, icon:'icons/icon-192.png'});
+  }catch(e){}
+}
+const NUDGES = ['Time to work out. 30 minutes — you\'ve got this.','Your future self says thanks. Let\'s go.','Rope, bells, bands. Pick one and start.','Don\'t think. Just press start.','Show up today. That\'s the whole trick.'];
+function reminderCheck(){
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  const now = new Date(), [hh,mm] = S.time.split(':').map(Number);
+  const due = new Date(); due.setHours(hh,mm,0,0); due.setMinutes(due.getMinutes()-Number(S.lead));
+  if(S.days.includes(now.getDay()) && now>=due && S.notified!==dkey() && !S.log.some(l=>l.date===dkey())){
+    S.notified = dkey(); save(); notify('💪 Workout time', rand(NUDGES));
+  }
+}
+async function syncSW(){
+  // hand the schedule to the service worker so it can nudge in the background (Android)
+  try{
+    if(!('caches' in window)) return;
+    const c = await caches.open('wn-state');
+    await c.put('state.json', new Response(JSON.stringify({days:S.days, time:S.time, lead:Number(S.lead),
+      doneDates:S.log.slice(-10).map(l=>l.date), notified:S.notified})));
+  }catch(e){}
+}
+
+/* ================= SETTINGS ================= */
+function renderGear(){
+  $('#g-rope').checked = S.rope; $('#g-bag').checked = S.bag;
+  $('#g-voice').checked = S.voice; $('#g-beep').checked = S.beep;
+  $('#lvl-chips').innerHTML = Object.entries(LEVELS).map(([k,l])=>`<button class="chip ${S.level===k?'on':''}" data-lvl="${k}">${l.label}</button>`).join('');
+  $('#lvl-desc').textContent = LEVELS[S.level].desc;
+}
+
+/* ================= WIRING ================= */
+function renderAll(){ renderToday(); renderRemind(); renderLog(); renderGear(); }
+function show(v){
+  document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on', x.id==='v-'+v));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.v===v));
+  window.scrollTo(0,0); renderAll();
+}
+document.querySelector('nav').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b) show(b.dataset.v); });
+document.addEventListener('click', e=>{
+  const t = e.target.closest('[data-focus],[data-swap],[data-kswap],[data-day],[data-lvl]'); if(!t) return;
+  if(t.dataset.focus){ S.focus=t.dataset.focus; S.circuit=genCircuit(S.focus); }
+  else if(t.dataset.swap!==undefined){
+    const i=+t.dataset.swap, cur=byName(S.circuit.ex[i]);
+    const pool=LIB.filter(e=>e.c===cur.c && hasGear(e) && !S.circuit.ex.includes(e.n));
+    if(pool.length) S.circuit.ex[i]=rand(pool).n;
+  }
+  else if(t.dataset.kswap!==undefined){
+    const i=+t.dataset.kswap, cur=byName(S.cardio[i]);
+    const pool=LIB.filter(e=>e.c===cur.c && hasGear(e) && e.n!==cur.n && e.n!==S.cardio[i-1] && e.n!==S.cardio[i+1]);
+    if(pool.length) S.cardio[i]=rand(pool).n;
+  }
+  else if(t.dataset.day!==undefined){
+    const d=+t.dataset.day; S.days = S.days.includes(d) ? S.days.filter(x=>x!==d) : [...S.days,d];
+  }
+  else if(t.dataset.lvl){ S.level=t.dataset.lvl; }
+  save(); renderAll();
+});
+$('#c-shuffle').onclick = ()=>{ S.circuit=genCircuit(S.focus); save(); renderToday(); };
+$('#k-shuffle').onclick = ()=>{ S.cardio=genCardio(); save(); renderToday(); };
+$('#c-start').onclick = ()=>startWorkout(['circuit']);
+$('#k-start').onclick = ()=>startWorkout(['cardio']);
+$('#both-start').onclick = ()=>startWorkout(['circuit','cardio']);
+$('#p-pause').onclick = togglePause;
+$('#p-skip').onclick = ()=>{ if(!P) return; if(P.i>=P.steps.length-1) return finishWorkout(true); P.paused=false; $('#p-pause').textContent='Pause'; enterStep(P.i+1); };
+$('#p-back').onclick = ()=>{ if(!P) return; P.paused=false; $('#p-pause').textContent='Pause'; enterStep(Math.max(0, P.remain > P.steps[P.i].dur-2 ? P.i-1 : P.i)); };
+$('#p-quit').onclick = ()=>{ if(confirm('End workout now? Anything over 5 minutes still gets logged.')) finishWorkout(false); };
+$('#d-ok').onclick = ()=>{ $('#done').classList.remove('on'); show('log'); };
+$('#r-time').onchange = e=>{ S.time=e.target.value||'07:00'; S.notified=''; save(); renderRemind(); };
+$('#r-lead').onchange = e=>{ S.lead=e.target.value; save(); };
+$('#ics').onclick = ()=>{
+  if(!S.days.length) return alert('Pick at least one day first.');
+  const blob = new Blob([makeICS()],{type:'text/calendar'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'workout-reminder.ics';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();}, 2000);
+};
+$('#n-enable').onclick = async ()=>{
+  try{
+    const p = await Notification.requestPermission();
+    if(p==='granted'){
+      notify('You\'re set 💪','I\'ll nudge you on your workout days.');
+      try{ const st = await navigator.permissions.query({name:'periodic-background-sync'});
+        if(st.state==='granted' && swReg && swReg.periodicSync) await swReg.periodicSync.register('workout-reminder',{minInterval:60*60*1000}); }catch(e){}
+    }
+  }catch(e){ alert('Notifications aren\'t available here. On iPhone, add the app to your Home Screen first.'); }
+  renderRemind();
+};
+$('#n-test').onclick = ()=>notify('💪 Workout time', rand(NUDGES));
+$('#g-rope').onchange = e=>{ S.rope=e.target.checked; S.cardio=genCardio(); save(); renderAll(); };
+$('#g-bag').onchange = e=>{ S.bag=e.target.checked; S.cardio=genCardio(); save(); renderAll(); };
+$('#g-voice').onchange = e=>{ S.voice=e.target.checked; save(); };
+$('#g-beep').onchange = e=>{ S.beep=e.target.checked; save(); };
+$('#manual-log').onclick = ()=>{
+  const m = prompt('How many minutes did you work out today?','30'); const mins = parseInt(m,10);
+  if(mins>0){ S.log.push({date:dkey(), ts:Date.now(), mins, type:'manual', complete:true}); save(); renderAll(); }
+};
+$('#reset').onclick = ()=>{ if(confirm('Erase all history and settings?')){ localStorage.removeItem('wn'); location.reload(); } };
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(r=>{ swReg=r; syncSW(); }).catch(()=>{});
+}
+renderAll();
+reminderCheck();
+setInterval(reminderCheck, 30000);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ reminderCheck(); if(!P) renderAll(); } });
+</script>
+</body>
+</html>
