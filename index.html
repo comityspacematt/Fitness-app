@@ -107,6 +107,30 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
 .rbig span{color:var(--muted);font-size:15px}
 .tag.reps{color:#fff;background:var(--accent)}
 #player.k-reps #p-kind{color:var(--accent)}
+.plan-line{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.2);font-size:14px}
+.qopt{display:block;width:100%;text-align:left;margin-top:10px;padding:14px 16px;border:1px solid var(--line);background:var(--card2)}
+.qopt b{display:block;font-size:17px}
+.qopt span{color:var(--muted);font-size:13px}
+.qopt.on{border-color:var(--accent);background:rgba(255,107,53,.12)}
+.qdots{display:flex;gap:6px;margin-bottom:14px}
+.qdots i{flex:1;height:4px;border-radius:4px;background:var(--card2)}
+.qdots i.on{background:var(--accent)}
+.sched{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line);align-items:center}
+.sched:first-child{border-top:0}
+.sched .d{min-width:44px;font-weight:700;color:var(--accent)}
+.dose{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.dose div{background:var(--card2);border-radius:10px;padding:8px;text-align:center}
+.dose b{display:block;font-size:20px}
+.dose span{font-size:11px;color:var(--muted)}
+.why li{margin:8px 0;font-size:14px;color:var(--muted)}
+.why b{color:var(--text)}
+.sci{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0}
+.sci summary{color:var(--text);font-weight:600;font-size:15px;margin:0;list-style:none}
+.sci summary::-webkit-details-marker{display:none}
+.sci summary:before{content:"＋ ";color:var(--accent)}
+.sci[open] summary:before{content:"－ "}
+.sci p{font-size:14px;color:var(--muted)}
+.sci a{color:var(--rest);font-size:12px;display:block;margin-top:4px}
 #done{position:fixed;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
 #done.on{display:flex}
 #done .big{font-size:80px}
@@ -122,7 +146,7 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
 
   <div class="card">
     <div class="row between">
-      <div><h2>30-min Circuit</h2><div class="muted small" id="c-meta"></div></div>
+      <div><h2 id="c-title">30-min Circuit</h2><div class="muted small" id="c-meta"></div></div>
       <button class="icon-btn" id="c-shuffle" title="New workout">🔀 New</button>
     </div>
     <div class="chips" id="mode-chips" style="margin-top:12px"></div>
@@ -142,6 +166,15 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
   </div>
 
   <button class="block ghost" id="both-start">🔥 Do both back-to-back (45 min)</button>
+</section>
+
+<!-- PLAN -->
+<section id="v-plan" class="view">
+  <h1>Your Plan</h1>
+  <div id="plan-box"></div>
+  <h3>The science behind it</h3>
+  <p class="muted small" style="margin-top:-4px">What exercise research says, and how this app uses it. Tap a card to read it.</p>
+  <div id="science"></div>
 </section>
 
 <!-- REMIND -->
@@ -225,6 +258,7 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
 
 <nav>
   <button data-v="today" class="on"><span class="i">🏋️</span>Workout</button>
+  <button data-v="plan"><span class="i">🧭</span>Plan</button>
   <button data-v="remind"><span class="i">⏰</span>Remind</button>
   <button data-v="log"><span class="i">📈</span>Progress</button>
   <button data-v="gear"><span class="i">⚙️</span>Gear</button>
@@ -253,6 +287,7 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
     </div>
     <div id="p-cue"></div>
     <div id="p-next"></div>
+    <div id="p-tip" class="small" style="color:var(--accent2);max-width:420px"></div>
   </div>
   <div class="pctl">
     <button id="p-back">⏮</button>
@@ -354,6 +389,128 @@ const REP_OVERRIDE = {'Push-Ups':10,'Pike Push-Ups':8,'Renegade Row':8,'Dumbbell
 LIB.forEach(e=>{ if(HOLDS[e.n]) e.hold=HOLDS[e.n]; if(PER_SIDE.has(e.n)) e.side=true; e.base = REP_OVERRIDE[e.n] || BASE_REPS[e.c]; });
 const REP_REST = {easy:{move:30, round:90}, std:{move:20, round:60}, hard:{move:15, round:45}};
 const REP_CAP = 8; // reps above base before we tell you to go heavier
+
+/* ================= EXERCISE SCIENCE =================
+   Evidence the plan builder is based on. Shown in the Plan tab. */
+const SRC = {
+  acsm:['ACSM Resistance Training Position Stand (2026)','https://acsm.org/resistance-training-guidelines-update-2026/'],
+  who:['WHO Physical Activity Guidelines (2020)','https://www.who.int/europe/news-room/fact-sheets/item/physical-activity'],
+  vol:['Schoenfeld et al. 2017, weekly volume & muscle growth (Sports Med)','https://link.springer.com/10.1007/s40279-016-0543-8'],
+  freq:['Schoenfeld et al. 2016, training frequency (Sports Med)','https://pubmed.ncbi.nlm.nih.gov/27102172/'],
+  rest:['Singer et al. 2024, rest intervals meta-analysis (Front Sports Act Living)','https://www.frontiersin.org/journals/sports-and-active-living/articles/10.3389/fspor.2024.1429789/pdf'],
+};
+const SCIENCE = [
+  {t:'Consistency beats clever programming', b:'The 2026 ACSM review of 137 systematic reviews found that things like periodization, set structure and training to total failure did not reliably change results. Showing up week after week is what counts. Your plan is sized for a busy week so you can keep it going.', s:['acsm']},
+  {t:'Train each muscle at least 2× a week', b:'ACSM and WHO both recommend strength training for all major muscle groups on 2 or more days a week. Twice a week builds more muscle than once a week, even when total work is the same. Every plan here hits each muscle group at least twice.', s:['acsm','who','freq']},
+  {t:'Volume builds muscle: aim for 10+ sets per muscle per week', b:'Muscle growth goes up with weekly hard sets. Groups doing 10+ sets per muscle per week grew the most, with diminishing returns somewhere above about 20. Each circuit round counts as one set for every muscle in it.', s:['acsm','vol']},
+  {t:'Light weights still work if you push close to failure', b:'With a 35 lb top weight, effort is the lever. Lighter loads build similar muscle to heavy ones when sets end near failure. You don\'t need to go all the way, though: stop with 1–2 good reps left ("reps in reserve"). That\'s why reps go up as you get stronger.', s:['acsm']},
+  {t:'Progressive overload: more reps, then more weight', b:'Your body adapts to what you ask of it, so the ask has to keep growing. The app uses "double progression": hit every set and next time\'s reps go up by 1. Once a move maxes out, switch to a heavier dumbbell or band, or a harder version.', s:['acsm']},
+  {t:'Control the lowering', b:'The lowering (eccentric) part of a rep is a strong growth signal. ACSM lists eccentric overload as a hypertrophy booster. Take 2–3 seconds to lower each rep. It makes light dumbbells feel much heavier.', s:['acsm']},
+  {t:'Strength likes heavier work, done fresh', b:'Max strength improves most with heavier loads, full range of motion, 2–3 sets, at the start of the session. Strength plans put your heaviest (35 lb) moves first and give longer rest between rounds.', s:['acsm']},
+  {t:'Rest: ~90 s+ between sets of the same muscle', b:'Resting more than ~90 seconds before training the same muscle again keeps quality high. Circuits alternate legs → push → pull, so each muscle rests while the others work. That\'s how a 30-minute circuit gets both conditioning and quality sets.', s:['rest']},
+  {t:'Cardio target: 75–150 min vigorous (or 150–300 moderate) per week', b:'WHO recommends 150–300 min of moderate activity a week, or 75–150 min of vigorous activity, or a mix. Jump rope and heavy-bag rounds count as vigorous, and timed circuits count as moderate to vigorous.', s:['who']},
+  {t:'Warm up dynamic, stretch after', b:'Moving warm-ups (jogging, squats, inchworms) raise body temperature and prepare your joints. Save long static stretches for the cool-down, which is how every session here is built.', s:[]},
+  {t:'Fat loss is mostly diet, and muscle protects you', b:'Workouts help, but fat loss mainly comes from eating a bit less than you burn. Lifting while you lose weight helps keep muscle. Research often points to roughly 1.6 g of protein per kg of bodyweight a day for people training to build or keep muscle.', s:[]},
+  {t:'Soreness vs. pain', b:'Muscle soreness 1–3 days after a new workout (DOMS) is normal and fades as you adapt. Sharp, joint or one-sided pain is not normal: stop that move and swap it with ↻. Check with a doctor before starting if you have heart issues, chest pain or dizziness with exertion.', s:[]},
+];
+const COACH_TIPS = [
+  'Lower each rep for 2–3 seconds. Slow negatives = more growth.',
+  'Breathe out on the hard part of the rep.',
+  'Full range of motion beats more weight.',
+  'Last set should feel hard: about 1–2 reps left in the tank.',
+  'Sip water. Shake out your arms.',
+  'Consistency beats intensity. You showing up is the win.',
+  'Too easy? Next time grab the heavier band or dumbbell.',
+  'Brace your core like you\'re about to get poked in the stomach.',
+];
+
+/* ================= PLAN QUESTIONNAIRE ================= */
+const QUESTIONS = [
+  {k:'goal', q:'What\'s your main goal?', opts:[
+    ['muscle','💪 Build muscle','Look and feel more muscular'],
+    ['strength','🏋️ Get stronger','Lift more, move better'],
+    ['lean','🔥 Lose fat & get fitter','Burn more, build stamina'],
+    ['habit','✅ Build the habit','Feel better and stay consistent']]},
+  {k:'exp', q:'How much have you trained lately?', opts:[
+    ['new','Just starting','Little or no regular exercise recently'],
+    ['some','On and off','Some workouts, not consistent'],
+    ['regular','Consistently','2+ times a week for 6+ months']]},
+  {k:'days', q:'How many days a week can you realistically train?', sub:'Pick what you can hit on a busy week, not a perfect one.', opts:[
+    [2,'2 days','Minimum effective dose'],[3,'3 days','The sweet spot for most people'],[4,'4 days','Upper/lower split'],[5,'5 days','Most volume']]},
+  {k:'time', q:'How long can each session be?', opts:[
+    [25,'~25 min','3-round circuit'],[30,'30 min','Full 4-round circuit'],[45,'45 min','Circuit + 15-min cardio/abs']]},
+];
+const PLAN_DAYS = {2:[2,5], 3:[1,3,5], 4:[1,2,4,5], 5:[1,2,3,4,5]};
+const GOAL_LABEL = {muscle:'Build muscle', strength:'Get stronger', lean:'Lose fat & get fitter', habit:'Build the habit'};
+
+function buildPlan(a){
+  const lift = f => ({focus:f, cardio:a.time===45});
+  const cardioDay = {cardioOnly:true};
+  const lifting = a.goal==='muscle' || a.goal==='strength';
+  let sessions;
+  if(a.days===2) sessions = [lift('full'), lift('full')];
+  else if(a.days===3) sessions = [lift('full'), lift('full'), lift('full')];
+  else if(a.days===4) sessions = lifting ? [lift('upper'), lift('lower'), lift('upper'), lift('lower')]
+                                         : [lift('full'), cardioDay, lift('full'), lift('full')];
+  else sessions = lifting ? [lift('upper'), lift('lower'), cardioDay, lift('upper'), lift('lower')]
+                          : [lift('full'), cardioDay, lift('full'), cardioDay, lift('full')];
+  return {
+    ...a, sessions, start: dkey(),
+    mode: lifting ? 'reps' : 'timed',
+    rounds: a.time===25 ? 3 : 4,
+    rest: a.goal==='strength' ? {move:30, round:120} : a.goal==='muscle' ? {move:20, round:90} : null,
+  };
+}
+function planWeek(p){ p = p||S.plan; return Math.floor((weekStart(new Date()) - weekStart(new Date(p.start+'T12:00')))/(7*864e5)) + 1; }
+function planLevel(p){
+  p = p||S.plan; const w = planWeek(p);
+  if(p.exp==='new') return w<=2 ? 'easy' : w<=8 ? 'std' : 'hard';
+  if(p.exp==='some') return w<=4 ? 'std' : 'hard';
+  return w<=1 ? 'std' : 'hard';
+}
+const repRest = () => (S.plan && S.plan.rest) || REP_REST[S.level];
+const sessionMins = (p, s) => s.cardioOnly ? 15 : (6 + p.rounds*6) + (s.cardio ? 15 : 0);
+const sessionLabel = (p, s) => s.cardioOnly ? 'Cardio + Abs (jump rope / bag intervals)'
+  : `${FOCUS[s.focus].label} circuit · ${p.mode==='reps'?'reps':'timed'}${s.cardio?' + Cardio/Abs':''}`;
+const sessionList = s => s.cardioOnly ? ['cardio'] : s.cardio ? ['circuit','cardio'] : ['circuit'];
+function weeklyDose(p){
+  const sets = {Legs:0, Push:0, Pull:0, Core:0}; let cardio = 0, total = 0;
+  p.sessions.forEach(s=>{
+    total += sessionMins(p, s);
+    if(s.cardioOnly || s.cardio) cardio += 15;
+    if(s.cardioOnly) return;
+    const r = p.rounds;
+    FOCUS[s.focus].pattern.forEach(c=>{
+      if(c==='lower') sets.Legs += r; else if(c==='push') sets.Push += r; else if(c==='pull') sets.Pull += r;
+      else if(c==='core') sets.Core += r;
+      else if(c==='arms'){ sets.Push += r/2; sets.Pull += r/2; }
+      else if(c==='full'){ sets.Legs += r/2; sets.Push += r/2; sets.Pull += r/2; }
+    });
+  });
+  Object.keys(sets).forEach(k=>sets[k]=Math.round(sets[k]));
+  return {sets, cardio, total};
+}
+function planReasons(p){
+  const d = weeklyDose(p), minSet = Math.min(d.sets.Legs, d.sets.Push, d.sets.Pull), R = [];
+  R.push(`<b>Every muscle group 2+ times a week</b>: the minimum ACSM and WHO recommend for strength and health.`);
+  if(p.goal==='muscle'){
+    R.push(`<b>~${minSet}–${Math.max(d.sets.Legs,d.sets.Push,d.sets.Pull)} sets per muscle per week.</b> Research shows the most growth at 10+.${minSet<10?' On weeks you can, add a bonus session to push this higher.':''}`);
+    R.push(`<b>Rep-based sets taken close to failure</b> (1–2 reps left). Light dumbbells build muscle when effort is high. Lower each rep for 2–3 seconds.`);
+  }
+  if(p.goal==='strength'){
+    R.push(`<b>Heaviest moves (35 lb) come first</b>, while you're fresh. Strength responds best to heavier work early in the session.`);
+    R.push(`<b>2-min rest between rounds</b> so each set is high quality. Single-leg and single-arm moves make your 35 lb dumbbell train like a heavier one.`);
+  }
+  if(p.goal==='lean'){
+    R.push(`<b>Timed circuits</b> keep your heart rate up while you build muscle, which helps you keep muscle as you lose fat.`);
+    R.push(`<b>Diet does most of the fat-loss work:</b> a modest calorie deficit plus plenty of protein (~1.6 g/kg/day).`);
+  }
+  if(p.goal==='habit') R.push(`<b>Sized to be doable on a busy week.</b> The 2026 ACSM review found consistency matters more than fancy programming.`);
+  R.push(`<b>${d.total} active minutes a week</b>, including ${d.cardio} min of rope/bag intervals. WHO recommends 150–300 moderate or 75–150 vigorous minutes.${d.total<150?' Walks on rest days help close the gap.':''}`);
+  if(p.exp==='new') R.push(`<b>Weeks 1–2 use the Starter level</b> so you can learn the moves. Intensity steps up automatically from week 3.`);
+  else R.push(`<b>Intensity ramps up automatically</b> as the weeks go by, and your rep targets rise every time you hit all your sets.`);
+  return R;
+}
 const WARMUP = [
   {n:'Easy Jog in Place / Easy Rope',cue:'Get the blood moving. Easy pace.',w:''},
   {n:'Arm Circles + Bodyweight Squats',cue:'10 arm circles each way, then slow squats.',w:''},
@@ -374,7 +531,7 @@ const LEVELS = {
   std: {label:'Standard',work:45, rest:15, kWork:45, kRest:15, desc:'45s work / 15s rest.'},
   hard:{label:'Push it', work:50, rest:10, kWork:50, kRest:10, desc:'50s work / 10s rest. Go up in band/DB weight when this feels easy.'},
 };
-const ROUNDS = 4;
+const rounds = () => (S.plan && S.plan.rounds) || 4;
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const ICAL_DAYS = ['SU','MO','TU','WE','TH','FR','SA'];
 
@@ -405,9 +562,18 @@ function nextFocus(){
 function genCircuit(focus){
   const used = new Set();
   const ex = FOCUS[focus].pattern.map(cat => {
-    const pool = LIB.filter(e => e.c===cat && hasGear(e) && !used.has(e.n));
+    let pool = LIB.filter(e => e.c===cat && hasGear(e) && !used.has(e.n));
+    if(S.plan && S.plan.goal==='strength'){ // favor the heaviest loads you own
+      const heavy = pool.filter(e => /35/.test(e.w));
+      if(heavy.length && Math.random() < .7) pool = heavy;
+    }
     const pick = rand(pool); used.add(pick.n); return pick.n;
   });
+  if(S.plan && S.plan.goal==='strength'){ // heaviest compound moves first, core stays last
+    const core = ex.pop();
+    ex.sort((a,b) => (/35/.test(byName(b).w)) - (/35/.test(byName(a).w)));
+    ex.push(core);
+  }
   return {focus, ex};
 }
 function genCardio(){
@@ -448,7 +614,21 @@ function exRow(e, i, swapAttr, extra){
     <div class="muted small">${esc(e.cue)}</div></div>
     ${swapAttr?`<button class="icon-btn" ${swapAttr} title="Swap">↻</button>`:''}</div>`;
 }
+function planSession(){
+  if(!S.plan) return null;
+  const idx = weekCount() % S.plan.sessions.length;
+  return {idx, s:S.plan.sessions[idx], week:planWeek()};
+}
+// Point today's circuit at the plan's next session (once per session, so manual tweaks stick)
+function applyPlanSession(){
+  const ps = planSession(); if(!ps) return;
+  const key = dkey(weekStart(new Date())) + '#' + ps.idx;
+  if(S.planApplied === key) return;
+  S.planApplied = key; S.level = planLevel();
+  if(!ps.s.cardioOnly){ S.focus = ps.s.focus; S.mode = S.plan.mode; }
+}
 function renderToday(){
+  applyPlanSession();
   ensurePlans();
   const h = new Date().getHours();
   $('#hello').textContent = h<12?'Good morning 💪':h<17?'Good afternoon 💪':'Good evening 💪';
@@ -459,28 +639,33 @@ function renderToday(){
   const planned = S.days.includes(dow);
   let cls='calm', msg;
   if(doneToday){ cls='done'; msg='<b>Done for today.</b> That\'s how it\'s built. 🙌'; }
-  else if(planned){ cls=''; msg=`<b>Today is a workout day.</b> ${wk>=goal?'You already hit your goal — bonus round!':'Just start the timer. 30 minutes. Go.'}`; }
+  else if(planned){ cls=''; msg=`<b>Today is a workout day.</b> ${wk>=goal?'You already hit your goal — bonus round!':`Just press start. ${S.plan ? sessionMins(S.plan, planSession().s) : 6+rounds()*6} minutes. Go.`}`; }
   else { msg = wk>=goal ? '<b>Rest day.</b> You hit your goal this week. 🎉' : `<b>Not a scheduled day</b> — but ${goal-wk} to go this week. A bonus session counts!`; }
-  $('#status').innerHTML = `<div class="banner ${cls}">${msg}
+  const ps = planSession();
+  const planHtml = ps ? `<div class="plan-line">📋 <b>Week ${ps.week}</b> · Session ${ps.idx+1} of ${S.plan.sessions.length}: <b>${sessionLabel(S.plan, ps.s)}</b> · ${sessionMins(S.plan, ps.s)} min
+      <button class="block" id="plan-go" style="margin-top:10px;background:#fff;color:#111;font-weight:700">▶ Start today's plan session</button></div>`
+    : `<div class="plan-line"><button class="block" id="plan-quiz" style="background:rgba(255,255,255,.15);color:#fff">🧭 Get a personal plan (4 quick questions)</button></div>`;
+  $('#c-title').textContent = `${6+rounds()*6}-min Circuit`;
+  $('#status').innerHTML = `<div class="banner ${cls}">${msg}${planHtml}
     <div class="stats"><div class="stat"><b>${wk}/${goal}</b><span>this week</span></div>
     <div class="stat"><b>${streak()}</b><span>week streak</span></div>
     <div class="stat"><b>${S.log.length}</b><span>total</span></div></div></div>`;
 
   // circuit
   const L = LEVELS[S.level];
-  const reps = S.mode==='reps', R = REP_REST[S.level];
+  const reps = S.mode==='reps', R = repRest();
   $('#mode-chips').innerHTML = `<button class="chip ${!reps?'on':''}" data-mode="timed">⏱ Timed</button><button class="chip ${reps?'on':''}" data-mode="reps">🔢 Reps</button>`;
   $('#focus-chips').innerHTML = Object.entries(FOCUS).map(([k,f]) => `<button class="chip ${S.focus===k?'on':''}" data-focus="${k}">${f.label}</button>`).join('');
-  $('#c-meta').textContent = reps ? `${FOCUS[S.focus].label} · ${ROUNDS} rounds · reps · ${R.move}s rest between moves`
-                                  : `${FOCUS[S.focus].label} · ${ROUNDS} rounds · ${L.work}s on / ${L.rest}s off`;
+  $('#c-meta').textContent = reps ? `${FOCUS[S.focus].label} · ${rounds()} rounds · reps · ${R.move}s rest between moves`
+                                  : `${FOCUS[S.focus].label} · ${rounds()} rounds · ${L.work}s on / ${L.rest}s off`;
   $('#c-list').innerHTML = S.circuit.ex.map((n,i)=>{
     const e = byName(n);
     const extra = reps ? `<span class="tag reps">${repLabel(e)}</span>${goHeavier(e)?'<span class="tag core">⬆ go heavier</span>':''}` : '';
     return exRow(e, i+1, `data-swap="${i}"`, extra);
   }).join('');
   $('#c-format').innerHTML = reps
-    ? `<b>Format:</b> 3-min warm-up → ${ROUNDS} rounds: do the reps, tap <b>Done</b>, ${R.move}s rest (${R.round}s between rounds) → 3-min stretch ≈ <b>30 min</b>. Hit every rep in all ${ROUNDS} rounds and the target goes up next time.`
-    : `<b>Format:</b> 3-min warm-up → ${ROUNDS} rounds of these 6 moves (6 min per round) → 3-min stretch = <b>30 min</b>.`;
+    ? `<b>Format:</b> 3-min warm-up → ${rounds()} rounds: do the reps, tap <b>Done</b>, ${R.move}s rest (${R.round}s between rounds) → 3-min stretch ≈ <b>${6+rounds()*6} min</b>. Hit every rep in all ${rounds()} rounds and the target goes up next time.`
+    : `<b>Format:</b> 3-min warm-up → ${rounds()} rounds of these 6 moves (6 min per round) → 3-min stretch = <b>${6+rounds()*6} min</b>.`;
 
   // cardio
   $('#k-meta').textContent = `15 × 1-min intervals · ${L.kWork}s on / ${L.kRest}s off · alternating cardio & abs`;
@@ -491,15 +676,15 @@ function renderToday(){
 function circuitSteps(){
   const L = LEVELS[S.level], st = [];
   WARMUP.forEach((e,i)=>st.push({...e, dur:60, kind:'warm', label:`Warm-up ${i+1}/3`}));
-  const reps = S.mode==='reps', R = REP_REST[S.level];
-  for(let r=1;r<=ROUNDS;r++){
+  const reps = S.mode==='reps', R = repRest();
+  for(let r=1;r<=rounds();r++){
     S.circuit.ex.forEach((n,i)=>{
-      const e = byName(n), label = `Round ${r}/${ROUNDS} · Move ${i+1}/6`;
+      const e = byName(n), label = `Round ${r}/${rounds()} · Move ${i+1}/6`;
       if(reps && !e.hold) st.push({n:e.n, w:e.w, cue:e.cue, kind:'reps', target:target(e), side:e.side, round:r, label});
       else st.push({n:e.n, w:e.w, cue:e.cue, dur: reps ? e.hold : L.work, kind:'work', label});
       const lastOfRound = i===5;
-      if(!(r===ROUNDS && lastOfRound)) st.push({n: lastOfRound?`Round ${r} done — sip water`:'Rest',
-        dur: reps ? (lastOfRound ? R.round : R.move) : L.rest, kind:'rest', label:`Round ${r}/${ROUNDS}`});
+      if(!(r===rounds() && lastOfRound)) st.push({n: lastOfRound?`Round ${r} done — sip water`:'Rest',
+        dur: reps ? (lastOfRound ? R.round : R.move) : L.rest, kind:'rest', label:`Round ${r}/${rounds()}`});
     });
   }
   // timed: fold the final rest slot into cooldown to keep exactly 30:00
@@ -577,6 +762,9 @@ function enterStep(i){
     $('#p-next').innerHTML = s.next ? `Then: ${esc(s.next.kind==='rest' && s.next.next ? s.next.next.n : s.next.n)}` : 'Last one!';
     say(isReps ? `${s.n}. ${s.target} reps${s.side?' each side':''}` : s.n);
   }
+  $('#p-tip').textContent = isReps
+    ? (S.plan && S.plan.goal==='strength' ? '🎯 Lower for 3 sec, then drive up hard.' : '🎯 Lower for 2–3 sec · stop with 1–2 good reps left.')
+    : (s.kind==='rest' && s.dur>=20 ? '💡 ' + rand(COACH_TIPS) : '');
   if(i>0){ beep(s.kind==='work'?1200:660, 350, .3); vibrate(s.kind==='work'?[200,80,200]:[300]); }
   renderTick();
 }
@@ -636,7 +824,7 @@ function finishWorkout(complete){
     Object.entries(done).forEach(([n,arr])=>{
       const e = byName(n), t = target(e), got = arr.filter(x=>x!=null);
       if(!got.length) return;
-      if(got.length >= ROUNDS && got.every(x=>x>=t)){
+      if(got.length >= rounds() && got.every(x=>x>=t)){
         if(t < e.base + REP_CAP){ S.targets[n] = t+1; notes.push(`⬆ ${n}: ${t+1} reps next time`); }
         else notes.push(`💪 ${n}: maxed out — use a heavier DB or band`);
       } else if(got.some(x=>x < t-2)){ S.targets[n] = Math.max(Math.ceil(e.base/2), t-1); notes.push(`${n}: ${S.targets[n]} reps next time`); }
@@ -771,7 +959,77 @@ function renderGear(){
 }
 
 /* ================= WIRING ================= */
-function renderAll(){ renderToday(); renderRemind(); renderLog(); renderGear(); }
+/* ================= PLAN TAB ================= */
+let Q = null; // quiz in progress: {step, a:{}, result}
+function planCard(p, preview){
+  const d = weeklyDose(p), days = PLAN_DAYS[p.days];
+  const sched = p.sessions.map((s,i)=>`<div class="sched"><div class="d">${DAYS[days[i]]}</div><div style="flex:1">${sessionLabel(p,s)}</div><div class="muted small">${sessionMins(p,s)}m</div></div>`).join('');
+  const lvl = LEVELS[planLevel(p)].label;
+  return `<div class="card">
+    <div class="row between"><div><h2>${GOAL_LABEL[p.goal]}</h2><div class="muted small">${p.days} days/week · ${preview?'Starts this week':'Week '+planWeek(p)} · Level: ${lvl}</div></div><div style="font-size:30px">${{muscle:'💪',strength:'🏋️',lean:'🔥',habit:'✅'}[p.goal]}</div></div>
+    <h3>Your week</h3>${sched}
+    <h3>Weekly dose</h3>
+    <div class="dose"><div><b>${d.sets.Legs}</b><span>leg sets</span></div><div><b>${d.sets.Push}</b><span>push sets</span></div><div><b>${d.sets.Pull}</b><span>pull sets</span></div><div><b>${d.total}</b><span>active min</span></div></div>
+    <h3>Why it's built this way</h3><ul class="why" style="padding-left:18px;margin:0">${planReasons(p).map(r=>`<li>${r}</li>`).join('')}</ul>
+    ${preview
+      ? `<button class="primary block" id="plan-accept" style="margin-top:14px">✓ Start this plan</button>
+         <p class="muted small" style="text-align:center">Sets your reminder days to ${days.map(x=>DAYS[x]).join(', ')}.</p>
+         <button class="block ghost" id="plan-retake">↺ Change my answers</button>`
+      : `<button class="primary block" id="plan-go2" style="margin-top:14px">▶ Start today's session</button>
+         <button class="block ghost" id="plan-retake" style="margin-top:8px">↺ Retake the quiz</button>
+         <button class="block ghost" id="plan-stop" style="margin-top:8px;color:#ff8080">Stop following this plan</button>`}
+  </div>`;
+}
+function renderPlan(){
+  const box = $('#plan-box');
+  if(Q && Q.result) box.innerHTML = `<p class="muted">Here's your plan, built from your answers and current exercise research:</p>` + planCard(Q.result, true);
+  else if(Q){
+    const q = QUESTIONS[Q.step];
+    box.innerHTML = `<div class="card">
+      <div class="qdots">${QUESTIONS.map((_,i)=>`<i class="${i<=Q.step?'on':''}"></i>`).join('')}</div>
+      <div class="muted small">Question ${Q.step+1} of ${QUESTIONS.length}</div>
+      <h2 style="margin-top:4px">${q.q}</h2>${q.sub?`<p class="muted small">${q.sub}</p>`:''}
+      ${q.opts.map(([v,l,sub])=>`<button class="qopt ${Q.a[q.k]===v?'on':''}" data-ans="${v}"><b>${l}</b>${sub?`<span>${sub}</span>`:''}</button>`).join('')}
+      ${Q.step>0?`<button class="block ghost" id="q-back" style="margin-top:14px">← Back</button>`:''}
+    </div>`;
+  }
+  else if(S.plan) box.innerHTML = planCard(S.plan, false);
+  else box.innerHTML = `<div class="card">
+      <h2>🧭 Get a plan built for you</h2>
+      <p class="muted">Answer 4 quick questions about your goal, experience and schedule. You'll get a weekly plan built for your dumbbells, bands, rope and bag, based on current exercise science.</p>
+      <button class="primary block" id="q-start" style="margin-top:10px">Start (takes 30 seconds)</button>
+      <p class="muted small" style="margin-top:10px">Heads up: if you have heart problems, chest pain, dizziness when exercising, or an injury, check with a doctor before starting.</p>
+    </div>`;
+  $('#science').innerHTML = SCIENCE.map(x=>`<details class="sci"><summary>${x.t}</summary><p>${x.b}</p>${x.s.map(k=>`<a href="${SRC[k][1]}" target="_blank" rel="noopener">📄 ${SRC[k][0]}</a>`).join('')}</details>`).join('');
+}
+function startPlanSession(){
+  const ps = planSession(); if(!ps) return;
+  if(!ps.s.cardioOnly){ S.focus = ps.s.focus; S.mode = S.plan.mode; ensurePlans(); }
+  startWorkout(sessionList(ps.s));
+}
+document.addEventListener('click', e=>{
+  const t = e.target.closest('#q-start,#plan-quiz,#plan-retake,#q-back,[data-ans],#plan-accept,#plan-stop,#plan-go,#plan-go2');
+  if(!t) return;
+  if(t.id==='q-start' || t.id==='plan-retake'){ Q = {step:0, a:{...(S.plan ? {goal:S.plan.goal,exp:S.plan.exp,days:S.plan.days,time:S.plan.time} : {})}}; }
+  else if(t.id==='plan-quiz'){ Q = {step:0, a:{}}; show('plan'); return; }
+  else if(t.id==='q-back'){ Q.step--; }
+  else if(t.dataset.ans!==undefined){
+    const q = QUESTIONS[Q.step]; const v = t.dataset.ans;
+    Q.a[q.k] = isNaN(v) ? v : Number(v);
+    if(Q.step < QUESTIONS.length-1) Q.step++; else Q.result = buildPlan(Q.a);
+  }
+  else if(t.id==='plan-accept'){
+    S.plan = Q.result; S.days = PLAN_DAYS[S.plan.days]; S.planApplied = null; S.notified = '';
+    Q = null; save(); renderAll(); window.scrollTo(0,0);
+    alert(`Plan started! Your reminder days are now ${S.days.map(x=>DAYS[x]).join(', ')}. If you added a calendar reminder before, add it again from the Remind tab.`);
+    return;
+  }
+  else if(t.id==='plan-stop'){ if(!confirm('Stop following this plan? Your history stays.')) return; S.plan = null; save(); }
+  else if(t.id==='plan-go' || t.id==='plan-go2'){ startPlanSession(); return; }
+  renderPlan(); window.scrollTo(0,0);
+});
+
+function renderAll(){ renderToday(); renderPlan(); renderRemind(); renderLog(); renderGear(); }
 function show(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on', x.id==='v-'+v));
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.v===v));

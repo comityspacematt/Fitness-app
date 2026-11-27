@@ -7,6 +7,8 @@ A phone web app (PWA) that reminds you to work out and builds your workouts:
 - Built for your gear: 35 lb DB, 10 lb and 8 lb DB pairs, and 15/10/5 lb bands. The jump rope and punching bag can be switched on or off.
 - Guided timer with beeps, voice cues, vibration, and a screen that stays awake.
 - Reminders: a repeating calendar event (iPhone/Google) plus app notifications where the phone allows them.
+- **Personal plan**: a 4-question quiz (goal, experience, days per week, session length) builds a weekly plan. It's based on the 2026 ACSM resistance-training position stand, WHO activity guidelines, and meta-analyses on training volume, frequency and rest. The Plan tab explains the research in plain English, with links to the sources.
+- **Reps mode**: rep targets that go up automatically, plus timed mode.
 - Progress: weekly goal, streak and history, saved on the phone.
 
 ## Put it on your phone

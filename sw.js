@@ -1,5 +1,5 @@
 // Workout Nudge service worker: offline cache + best-effort background reminders.
-const CACHE = 'wn-app-v2';
+const CACHE = 'wn-app-v3';
 const ASSETS = ['./', 'index.html', 'manifest.json', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
