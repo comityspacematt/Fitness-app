@@ -101,6 +101,12 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
 .pctl button{padding:16px;font-size:16px}
 #player.k-rest #p-kind{color:var(--rest)} #player.k-work #p-kind{color:var(--accent)}
 #player.k-warm #p-kind,#player.k-cool #p-kind{color:var(--good)}
+.rbtn{width:68px;height:68px;border-radius:50%;font-size:32px;padding:0}
+.rbig{min-width:120px;text-align:center}
+.rbig b{display:block;font-size:104px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums}
+.rbig span{color:var(--muted);font-size:15px}
+.tag.reps{color:#fff;background:var(--accent)}
+#player.k-reps #p-kind{color:var(--accent)}
 #done{position:fixed;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
 #done.on{display:flex}
 #done .big{font-size:80px}
@@ -119,7 +125,8 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
       <div><h2>30-min Circuit</h2><div class="muted small" id="c-meta"></div></div>
       <button class="icon-btn" id="c-shuffle" title="New workout">🔀 New</button>
     </div>
-    <div class="chips" id="focus-chips" style="margin-top:12px"></div>
+    <div class="chips" id="mode-chips" style="margin-top:12px"></div>
+    <div class="chips" id="focus-chips" style="margin-top:8px"></div>
     <div id="c-list" style="margin-top:8px"></div>
     <div class="note" id="c-format"></div>
     <button class="primary block" style="margin-top:12px" id="c-start">▶ Start circuit</button>
@@ -236,6 +243,14 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
         <circle id="p-arc" cx="115" cy="115" r="104" stroke="#ff6b35" stroke-width="14" fill="none" stroke-linecap="round" stroke-dasharray="653.45" stroke-dashoffset="0"/></svg>
       <div class="t" id="p-time">0</div>
     </div>
+    <div id="p-reps" style="display:none">
+      <div class="row" style="justify-content:center;gap:22px">
+        <button class="rbtn" id="r-minus" aria-label="One less rep">−</button>
+        <div class="rbig"><b id="r-num">12</b><span id="r-unit">reps</span></div>
+        <button class="rbtn" id="r-plus" aria-label="One more rep">+</button>
+      </div>
+      <div class="muted small" id="r-last" style="margin-top:10px"></div>
+    </div>
     <div id="p-cue"></div>
     <div id="p-next"></div>
   </div>
@@ -251,6 +266,7 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
   <div class="big">🏆</div>
   <h1 id="d-title">Workout complete!</h1>
   <p class="muted" id="d-sub"></p>
+  <div class="note" id="d-notes" style="display:none;text-align:left;max-width:360px;width:100%"></div>
   <button class="primary block" id="d-ok" style="max-width:320px;margin-top:20px">Nice</button>
 </div>
 
@@ -330,6 +346,14 @@ const LIB = [
   {n:'Squat Jumps',c:'cardio',w:'Bodyweight',cue:'Squat, explode up, land softly back into the squat.'},
   {n:'Fast Feet',c:'cardio',w:'Bodyweight',cue:'Quick little steps in place, low and athletic.'},
 ];
+/* ---- rep-mode data ---- */
+const HOLDS = {'Plank':30,'Hollow Hold':20,'Side Plank (switch halfway)':40,'Goblet Wall Sit':40};
+const PER_SIDE = new Set(['Reverse Lunge','Bulgarian Split Squat','Single-Leg RDL','Step-Ups','Single-Arm Floor Press','Single-Arm Row','Dumbbell Woodchop','Band Pallof Press','Banded Lateral Walk','Renegade Row']);
+const BASE_REPS = {lower:12,push:10,pull:12,arms:12,full:10,core:15,cardio:20};
+const REP_OVERRIDE = {'Push-Ups':10,'Pike Push-Ups':8,'Renegade Row':8,'Dumbbell Swing':15,'Russian Twist':20,'Mountain Climbers':20,'Bicycle Crunch':20,'Flutter Kicks':30,'Plank Shoulder Taps':20,'Bulgarian Split Squat':10,'Band Pull-Apart':15,'Burpees':10};
+LIB.forEach(e=>{ if(HOLDS[e.n]) e.hold=HOLDS[e.n]; if(PER_SIDE.has(e.n)) e.side=true; e.base = REP_OVERRIDE[e.n] || BASE_REPS[e.c]; });
+const REP_REST = {easy:{move:30, round:90}, std:{move:20, round:60}, hard:{move:15, round:45}};
+const REP_CAP = 8; // reps above base before we tell you to go heavier
 const WARMUP = [
   {n:'Easy Jog in Place / Easy Rope',cue:'Get the blood moving. Easy pace.',w:''},
   {n:'Arm Circles + Bodyweight Squats',cue:'10 arm circles each way, then slow squats.',w:''},
@@ -358,7 +382,8 @@ const ICAL_DAYS = ['SU','MO','TU','WE','TH','FR','SA'];
 const DEFAULTS = {
   rope:true, bag:false, level:'easy', voice:true, beep:true,
   days:[1,3,5], time:'07:00', lead:'0',
-  log:[], circuit:null, cardio:null, focus:null, notified:''
+  log:[], circuit:null, cardio:null, focus:null, notified:'',
+  mode:'timed', targets:{}
 };
 let S;
 try{ S = Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('wn') || '{}')); }catch(e){ S = {...DEFAULTS}; }
@@ -402,6 +427,11 @@ function genCardio(){
   return out;
 }
 const byName = n => LIB.find(e=>e.n===n);
+const target = e => Math.max(4, (S.targets||{})[e.n] || e.base);
+const goHeavier = e => !e.hold && target(e) >= e.base + REP_CAP;
+const repLabel = e => e.hold ? `${e.hold}s hold` : `${target(e)} reps${e.side?' each side':''}`;
+function lastSets(n){ const l = [...S.log].reverse().find(l => l.sets && l.sets[n]); return l ? l.sets[n].filter(x=>x!=null) : null; }
+const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
 function ensurePlans(){
   if(!S.focus) S.focus = nextFocus();
   if(!S.circuit || S.circuit.focus!==S.focus || S.circuit.ex.some(n=>!byName(n)||!hasGear(byName(n)))) S.circuit = genCircuit(S.focus);
@@ -410,11 +440,11 @@ function ensurePlans(){
 }
 
 /* ================= RENDER: TODAY ================= */
-function exRow(e, i, swapAttr){
+function exRow(e, i, swapAttr, extra){
   const tagCls = e.c==='cardio'?'cardio':e.c==='core'?'core':'';
   return `<div class="ex"><div class="num">${i}</div><div class="body">
     <div class="name">${esc(e.n)}</div>
-    <span class="tag ${tagCls}">${esc(e.w)}</span>
+    ${extra||''}<span class="tag ${tagCls}">${esc(e.w)}</span>
     <div class="muted small">${esc(e.cue)}</div></div>
     ${swapAttr?`<button class="icon-btn" ${swapAttr} title="Swap">↻</button>`:''}</div>`;
 }
@@ -438,10 +468,19 @@ function renderToday(){
 
   // circuit
   const L = LEVELS[S.level];
+  const reps = S.mode==='reps', R = REP_REST[S.level];
+  $('#mode-chips').innerHTML = `<button class="chip ${!reps?'on':''}" data-mode="timed">⏱ Timed</button><button class="chip ${reps?'on':''}" data-mode="reps">🔢 Reps</button>`;
   $('#focus-chips').innerHTML = Object.entries(FOCUS).map(([k,f]) => `<button class="chip ${S.focus===k?'on':''}" data-focus="${k}">${f.label}</button>`).join('');
-  $('#c-meta').textContent = `${FOCUS[S.focus].label} · ${ROUNDS} rounds · ${L.work}s on / ${L.rest}s off`;
-  $('#c-list').innerHTML = S.circuit.ex.map((n,i)=>exRow(byName(n), i+1, `data-swap="${i}"`)).join('');
-  $('#c-format').innerHTML = `<b>Format:</b> 3-min warm-up → ${ROUNDS} rounds of these 6 moves (6 min per round) → 3-min stretch = <b>30 min</b>.`;
+  $('#c-meta').textContent = reps ? `${FOCUS[S.focus].label} · ${ROUNDS} rounds · reps · ${R.move}s rest between moves`
+                                  : `${FOCUS[S.focus].label} · ${ROUNDS} rounds · ${L.work}s on / ${L.rest}s off`;
+  $('#c-list').innerHTML = S.circuit.ex.map((n,i)=>{
+    const e = byName(n);
+    const extra = reps ? `<span class="tag reps">${repLabel(e)}</span>${goHeavier(e)?'<span class="tag core">⬆ go heavier</span>':''}` : '';
+    return exRow(e, i+1, `data-swap="${i}"`, extra);
+  }).join('');
+  $('#c-format').innerHTML = reps
+    ? `<b>Format:</b> 3-min warm-up → ${ROUNDS} rounds: do the reps, tap <b>Done</b>, ${R.move}s rest (${R.round}s between rounds) → 3-min stretch ≈ <b>30 min</b>. Hit every rep in all ${ROUNDS} rounds and the target goes up next time.`
+    : `<b>Format:</b> 3-min warm-up → ${ROUNDS} rounds of these 6 moves (6 min per round) → 3-min stretch = <b>30 min</b>.`;
 
   // cardio
   $('#k-meta').textContent = `15 × 1-min intervals · ${L.kWork}s on / ${L.kRest}s off · alternating cardio & abs`;
@@ -452,16 +491,19 @@ function renderToday(){
 function circuitSteps(){
   const L = LEVELS[S.level], st = [];
   WARMUP.forEach((e,i)=>st.push({...e, dur:60, kind:'warm', label:`Warm-up ${i+1}/3`}));
+  const reps = S.mode==='reps', R = REP_REST[S.level];
   for(let r=1;r<=ROUNDS;r++){
     S.circuit.ex.forEach((n,i)=>{
-      const e = byName(n);
-      st.push({n:e.n, w:e.w, cue:e.cue, dur:L.work, kind:'work', label:`Round ${r}/${ROUNDS} · Move ${i+1}/6`});
+      const e = byName(n), label = `Round ${r}/${ROUNDS} · Move ${i+1}/6`;
+      if(reps && !e.hold) st.push({n:e.n, w:e.w, cue:e.cue, kind:'reps', target:target(e), side:e.side, round:r, label});
+      else st.push({n:e.n, w:e.w, cue:e.cue, dur: reps ? e.hold : L.work, kind:'work', label});
       const lastOfRound = i===5;
-      if(!(r===ROUNDS && lastOfRound)) st.push({n: lastOfRound?`Round ${r} done — sip water`:'Rest', dur:L.rest, kind:'rest', label:`Round ${r}/${ROUNDS}`});
+      if(!(r===ROUNDS && lastOfRound)) st.push({n: lastOfRound?`Round ${r} done — sip water`:'Rest',
+        dur: reps ? (lastOfRound ? R.round : R.move) : L.rest, kind:'rest', label:`Round ${r}/${ROUNDS}`});
     });
   }
-  // fill the final rest slot into cooldown length to keep 30:00
-  COOLDOWN.forEach((e,i)=>st.push({...e, dur: i===0 ? 60+L.rest : 60, kind:'cool', label:`Cool-down ${i+1}/3`}));
+  // timed: fold the final rest slot into cooldown to keep exactly 30:00
+  COOLDOWN.forEach((e,i)=>st.push({...e, dur: (i===0 && !reps) ? 60+L.rest : 60, kind:'cool', label:`Cool-down ${i+1}/3`}));
   return st;
 }
 function cardioSteps(){
@@ -497,7 +539,8 @@ function startWorkout(sessions){
   sessions.forEach(s => steps = steps.concat(s==='circuit'?circuitSteps():cardioSteps()));
   steps.forEach((s,i)=>{ s.next = steps[i+1]; });
   const total = steps.reduce((a,s)=>a+s.dur,0);
-  P = {sessions, steps, i:0, endAt:0, remain:steps[0].dur, paused:false, total, timer:null, lastSec:null};
+  P = {sessions, steps, i:0, endAt:0, remain:steps[0].dur, paused:false, total, timer:null, lastSec:null,
+       elapsed:0, lastTick:Date.now(), hasReps: steps.some(s=>s.kind==='reps'), done:{}, cur:0};
   $('#p-title').textContent = sessions.length>1 ? 'Circuit + Cardio/Abs' : sessions[0]==='circuit' ? `${FOCUS[S.focus].label} Circuit` : 'Cardio + Abs';
   $('#player').classList.add('on');
   lockScreen();
@@ -506,28 +549,45 @@ function startWorkout(sessions){
 }
 function enterStep(i){
   P.i = i; const s = P.steps[i];
-  P.remain = s.dur; P.endAt = Date.now() + s.dur*1000; P.lastSec = null;
+  P.remain = s.dur||0; P.endAt = Date.now() + (s.dur||0)*1000; P.lastSec = null;
   const pl = $('#player'); pl.className = 'on k-'+s.kind;
-  $('#p-kind').textContent = s.kind==='work' ? 'Work · '+s.label : s.kind==='rest' ? 'Rest' : s.label;
+  const isReps = s.kind==='reps';
+  $('.ring').style.display = isReps ? 'none' : '';
+  $('#p-reps').style.display = isReps ? '' : 'none';
+  if(isReps){
+    P.paused = false; P.cur = s.target;
+    $('#r-num').textContent = P.cur;
+    $('#r-unit').textContent = 'reps' + (s.side ? ' each side' : '');
+    const last = lastSets(s.n);
+    $('#r-last').textContent = last ? `Last time: ${last.join(' · ')}` : 'Did more or fewer? Fix it with − / + before tapping Done.';
+  }
+  $('#p-pause').textContent = isReps ? '✓ Done' : (P.paused ? 'Resume' : 'Pause');
+  $('#p-kind').textContent = s.kind==='work' ? 'Work · '+s.label : isReps ? 'Reps · '+s.label : s.kind==='rest' ? 'Rest' : s.label;
   $('#p-name').textContent = s.n;
   $('#p-weight').textContent = s.w || '';
   $('#p-cue').textContent = s.cue || '';
   $('#p-arc').setAttribute('stroke', s.kind==='rest'?'#4da3ff':s.kind==='work'?'#ff6b35':'#3ecf8e');
   if(s.kind==='rest' && s.next){
-    $('#p-next').innerHTML = `Up next: <b style="color:var(--text)">${esc(s.next.n)}</b>${s.next.w?' · '+esc(s.next.w):''}`;
+    const nr = s.next.kind==='reps' ? ` · <b style="color:var(--text)">${s.next.target} reps${s.next.side?' each side':''}</b>` : '';
+    $('#p-next').innerHTML = `Up next: <b style="color:var(--text)">${esc(s.next.n)}</b>${nr}${s.next.w?' · '+esc(s.next.w):''}`;
     $('#p-weight').textContent = '';
     $('#p-cue').textContent = s.next.cue || '';
-    say((s.n.startsWith('Round')?s.n+'. ':'Rest. ')+'Next up, '+s.next.n);
+    say((s.n.startsWith('Round')?s.n+'. ':'Rest. ')+'Next up, '+s.next.n + (s.next.kind==='reps' ? `, ${s.next.target} reps` : ''));
   } else {
     $('#p-next').innerHTML = s.next ? `Then: ${esc(s.next.kind==='rest' && s.next.next ? s.next.next.n : s.next.n)}` : 'Last one!';
-    say(s.n);
+    say(isReps ? `${s.n}. ${s.target} reps${s.side?' each side':''}` : s.n);
   }
   if(i>0){ beep(s.kind==='work'?1200:660, 350, .3); vibrate(s.kind==='work'?[200,80,200]:[300]); }
   renderTick();
 }
 function vibrate(p){ try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} }
 function tick(){
-  if(!P || P.paused) return;
+  if(!P) return;
+  const now = Date.now();
+  if(!P.paused) P.elapsed += (now - P.lastTick)/1000;
+  P.lastTick = now;
+  if(P.paused) return;
+  if(P.steps[P.i].kind==='reps'){ renderTick(); return; }
   P.remain = Math.max(0, (P.endAt - Date.now())/1000);
   const sec = Math.ceil(P.remain);
   if(sec !== P.lastSec){ if(sec<=3 && sec>0) beep(880,120); P.lastSec = sec; }
@@ -539,11 +599,18 @@ function tick(){
 }
 function renderTick(){
   const s = P.steps[P.i];
-  $('#p-time').textContent = Math.ceil(P.remain);
-  $('#p-arc').setAttribute('stroke-dashoffset', 653.45 * (1 - P.remain / s.dur));
+  if(s.kind!=='reps'){
+    $('#p-time').textContent = Math.ceil(P.remain);
+    $('#p-arc').setAttribute('stroke-dashoffset', 653.45 * (1 - P.remain / s.dur));
+  }
+  if(P.hasReps){
+    $('#p-left').textContent = '⏱ ' + fmt(P.elapsed);
+    $('#p-bar div').style.width = (100*P.i/P.steps.length)+'%';
+    return;
+  }
   const elapsed = P.steps.slice(0,P.i).reduce((a,x)=>a+x.dur,0) + (s.dur - P.remain);
   const left = Math.max(0, P.total - elapsed);
-  $('#p-left').textContent = `${Math.floor(left/60)}:${String(Math.floor(left%60)).padStart(2,'0')} left`;
+  $('#p-left').textContent = `${fmt(left)} left`;
   $('#p-bar div').style.width = (100*elapsed/P.total)+'%';
 }
 function togglePause(){
@@ -556,12 +623,25 @@ function finishWorkout(complete){
   clearInterval(P.timer);
   try{ wakeLock && wakeLock.release(); }catch(e){}
   $('#player').classList.remove('on');
-  const elapsed = P.steps.slice(0,P.i).reduce((a,x)=>a+x.dur,0) + (P.steps[P.i].dur - P.remain);
-  const mins = Math.round(elapsed/60);
-  const sessions = P.sessions; P = null;
+  const mins = Math.max(complete ? 1 : 0, Math.round(P.elapsed/60));
+  const sessions = P.sessions, done = P.done; P = null;
   if(!complete && mins < 5){ renderAll(); return; }
   const entry = {date:dkey(), ts:Date.now(), mins, type:sessions.join('+'), complete};
-  if(sessions.includes('circuit')) entry.focus = S.focus;
+  if(sessions.includes('circuit')){ entry.focus = S.focus; entry.mode = S.mode; }
+  // reps: save what you did and auto-adjust next time's targets
+  const notes = [];
+  if(Object.keys(done).length){
+    entry.sets = done;
+    S.targets = S.targets || {};
+    Object.entries(done).forEach(([n,arr])=>{
+      const e = byName(n), t = target(e), got = arr.filter(x=>x!=null);
+      if(!got.length) return;
+      if(got.length >= ROUNDS && got.every(x=>x>=t)){
+        if(t < e.base + REP_CAP){ S.targets[n] = t+1; notes.push(`⬆ ${n}: ${t+1} reps next time`); }
+        else notes.push(`💪 ${n}: maxed out — use a heavier DB or band`);
+      } else if(got.some(x=>x < t-2)){ S.targets[n] = Math.max(Math.ceil(e.base/2), t-1); notes.push(`${n}: ${S.targets[n]} reps next time`); }
+    });
+  }
   S.log.push(entry);
   // queue fresh workouts for next time
   if(sessions.includes('circuit')){ S.focus = nextFocus(); S.circuit = genCircuit(S.focus); }
@@ -572,6 +652,8 @@ function finishWorkout(complete){
   $('#d-title').textContent = complete ? 'Workout complete!' : 'Logged — nice work';
   const wk = weekCount(), goal = S.days.length||3;
   $('#d-sub').textContent = `${mins} minutes. ${wk}/${goal} this week.` + (wk===goal ? ' Weekly goal hit! 🎉' : wk>goal ? ' Above and beyond.' : '');
+  $('#d-notes').style.display = notes.length ? '' : 'none';
+  $('#d-notes').innerHTML = '<b>Next time</b><br>' + notes.map(esc).join('<br>');
   $('#done').classList.add('on');
 }
 
@@ -605,8 +687,9 @@ function renderLog(){
   const names = {circuit:'Circuit', cardio:'Cardio + Abs', 'circuit+cardio':'Circuit + Cardio/Abs', manual:'Own workout'};
   $('#history').innerHTML = S.log.length ? [...S.log].reverse().slice(0,40).map(l=>{
     const d = new Date(l.date+'T12:00');
-    return `<div class="log-item"><div><b>${names[l.type]||l.type}</b>${l.focus&&l.type!=='cardio'?` <span class="muted small">· ${FOCUS[l.focus].label}</span>`:''}
-      <div class="muted small">${d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</div></div><div class="muted">${l.mins} min</div></div>`;
+    const sets = l.sets ? `<details><summary>Reps</summary>${Object.entries(l.sets).map(([n,a])=>`<div class="small">${esc(n)}: <b>${a.filter(x=>x!=null).join(' · ')}</b></div>`).join('')}</details>` : '';
+    return `<div class="log-item"><div><b>${names[l.type]||l.type}</b>${l.focus&&l.type!=='cardio'?` <span class="muted small">· ${FOCUS[l.focus].label}${l.mode==='reps'?' · reps':''}</span>`:''}
+      <div class="muted small">${d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</div>${sets}</div><div class="muted">${l.mins} min</div></div>`;
   }).join('') : '<p class="muted">No workouts yet. Your first one is the hardest — go get it.</p>';
 }
 
@@ -696,8 +779,9 @@ function show(v){
 }
 document.querySelector('nav').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b) show(b.dataset.v); });
 document.addEventListener('click', e=>{
-  const t = e.target.closest('[data-focus],[data-swap],[data-kswap],[data-day],[data-lvl]'); if(!t) return;
-  if(t.dataset.focus){ S.focus=t.dataset.focus; S.circuit=genCircuit(S.focus); }
+  const t = e.target.closest('[data-mode],[data-focus],[data-swap],[data-kswap],[data-day],[data-lvl]'); if(!t) return;
+  if(t.dataset.mode){ S.mode=t.dataset.mode; }
+  else if(t.dataset.focus){ S.focus=t.dataset.focus; S.circuit=genCircuit(S.focus); }
   else if(t.dataset.swap!==undefined){
     const i=+t.dataset.swap, cur=byName(S.circuit.ex[i]);
     const pool=LIB.filter(e=>e.c===cur.c && hasGear(e) && !S.circuit.ex.includes(e.n));
@@ -719,7 +803,17 @@ $('#k-shuffle').onclick = ()=>{ S.cardio=genCardio(); save(); renderToday(); };
 $('#c-start').onclick = ()=>startWorkout(['circuit']);
 $('#k-start').onclick = ()=>startWorkout(['cardio']);
 $('#both-start').onclick = ()=>startWorkout(['circuit','cardio']);
-$('#p-pause').onclick = togglePause;
+$('#p-pause').onclick = ()=>{
+  if(P && P.steps[P.i].kind==='reps'){
+    const s = P.steps[P.i];
+    (P.done[s.n] = P.done[s.n] || [])[s.round-1] = P.cur;
+    if(P.i >= P.steps.length-1) return finishWorkout(true);
+    return enterStep(P.i+1);
+  }
+  togglePause();
+};
+$('#r-minus').onclick = ()=>{ if(P){ P.cur = Math.max(0, P.cur-1); $('#r-num').textContent = P.cur; } };
+$('#r-plus').onclick  = ()=>{ if(P){ P.cur++; $('#r-num').textContent = P.cur; } };
 $('#p-skip').onclick = ()=>{ if(!P) return; if(P.i>=P.steps.length-1) return finishWorkout(true); P.paused=false; $('#p-pause').textContent='Pause'; enterStep(P.i+1); };
 $('#p-back').onclick = ()=>{ if(!P) return; P.paused=false; $('#p-pause').textContent='Pause'; enterStep(Math.max(0, P.remain > P.steps[P.i].dur-2 ? P.i-1 : P.i)); };
 $('#p-quit').onclick = ()=>{ if(confirm('End workout now? Anything over 5 minutes still gets logged.')) finishWorkout(false); };
