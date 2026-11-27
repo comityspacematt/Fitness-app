@@ -21,7 +21,10 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-body{padding:env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom))}
+/* iOS home-screen apps with a translucent status bar size the viewport short by the status-bar height,
+   leaving a gap under the fixed tab bar. Making the document that much taller fixes it. */
+html{min-height:calc(100% + env(safe-area-inset-top))}
+body{padding:env(safe-area-inset-top) 0 calc(70px + env(safe-area-inset-bottom))}
 main{max-width:560px;margin:0 auto;padding:16px}
 h1{font-size:26px;margin:8px 0 4px}
 h2{font-size:19px;margin:0}
@@ -57,9 +60,10 @@ button:active{transform:scale(.98)}
 .tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:6px;background:var(--card2);color:var(--accent2);margin-right:4px}
 .tag.cardio{color:var(--rest)} .tag.core{color:var(--good)}
 details summary{cursor:pointer;color:var(--muted);font-size:14px;margin-top:8px}
-nav{position:fixed;left:0;right:0;bottom:0;background:rgba(15,17,21,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:10}
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(15,17,21,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;padding:6px 6px max(6px, env(safe-area-inset-bottom));z-index:10}
 nav button{flex:1;flex-direction:column;gap:2px;background:none;font-size:11px;color:var(--muted);padding:6px}
-nav button .i{font-size:21px;line-height:1}
+nav button .i{display:block;line-height:0}
+nav button .i .ico{width:22px;height:22px}
 nav button.on{color:var(--accent)}
 .view{display:none}.view.on{display:block}
 input[type=time],select{font:inherit;background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
@@ -133,10 +137,42 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
 .sci a{color:var(--rest);font-size:12px;display:block;margin-top:4px}
 #done{position:fixed;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
 #done.on{display:flex}
-#done .big{font-size:80px}
+#done .big{color:var(--warn)}
+#done .big .ico{width:88px;height:88px;stroke-width:1.6}
+.ico{width:1.15em;height:1.15em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.2em}
+h2 .ico{margin-right:6px;color:var(--accent)}
+.pctl .ico{width:22px;height:22px}
+.dot .ico{width:16px;height:16px;stroke-width:3}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="currentColor"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5Z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-dumbbell" viewBox="0 0 24 24"><path d="M6.5 6.5 17.5 17.5"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></symbol>
+    <symbol id="i-alarm" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6M22 6l-3-3M6.38 18.7 4 21M17.64 18.67 20 21"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 24 24"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 20 9 12l10-8v16Z" fill="currentColor"/><path d="M5 19V5"/></symbol>
+    <symbol id="i-skip" viewBox="0 0 24 24"><path d="m5 4 10 8-10 8V4Z" fill="currentColor"/><path d="M19 5v14"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-timer" viewBox="0 0 24 24"><path d="M10 2h4M12 14l3-3"/><circle cx="12" cy="14" r="8"/></symbol>
+    <symbol id="i-hash" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7M12 19V5"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 8-2 6-6 2 2-6z"/></symbol>
+    <symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 2h6v4H9zM9 12h6M9 16h4"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V16h8v-1.3A7 7 0 0 0 12 2z"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></symbol>
+  </defs>
+</svg>
 <main>
 
 <!-- TODAY -->
@@ -147,25 +183,25 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
   <div class="card">
     <div class="row between">
       <div><h2 id="c-title">30-min Circuit</h2><div class="muted small" id="c-meta"></div></div>
-      <button class="icon-btn" id="c-shuffle" title="New workout">🔀 New</button>
+      <button class="icon-btn" id="c-shuffle" title="New workout"><svg class="ico" aria-hidden="true"><use href="#i-shuffle"/></svg> New</button>
     </div>
     <div class="chips" id="mode-chips" style="margin-top:12px"></div>
     <div class="chips" id="focus-chips" style="margin-top:8px"></div>
     <div id="c-list" style="margin-top:8px"></div>
     <div class="note" id="c-format"></div>
-    <button class="primary block" style="margin-top:12px" id="c-start">▶ Start circuit</button>
+    <button class="primary block" style="margin-top:12px" id="c-start"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg> Start circuit</button>
   </div>
 
   <div class="card">
     <div class="row between">
       <div><h2>15-min Cardio + Abs</h2><div class="muted small" id="k-meta"></div></div>
-      <button class="icon-btn" id="k-shuffle">🔀 New</button>
+      <button class="icon-btn" id="k-shuffle" title="New workout"><svg class="ico" aria-hidden="true"><use href="#i-shuffle"/></svg> New</button>
     </div>
     <div id="k-list" style="margin-top:8px"></div>
-    <button class="primary block" style="margin-top:12px" id="k-start">▶ Start cardio + abs</button>
+    <button class="primary block" style="margin-top:12px" id="k-start"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg> Start cardio + abs</button>
   </div>
 
-  <button class="block ghost" id="both-start">🔥 Do both back-to-back (45 min)</button>
+  <button class="block ghost" id="both-start"><svg class="ico" aria-hidden="true"><use href="#i-flame"/></svg> Do both back-to-back (45 min)</button>
 </section>
 
 <!-- PLAN -->
@@ -191,14 +227,14 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
   </div>
 
   <div class="card">
-    <h2>📅 Most reliable: add to your phone's calendar</h2>
+    <h2><svg class="ico" aria-hidden="true"><use href="#i-calendar"/></svg>Most reliable: add to your phone's calendar</h2>
     <p class="muted small">Your calendar will alert you even when this app is closed. Re-do this if you change your days or time.</p>
     <button class="primary block" id="ics" style="margin-top:10px">Add to iPhone / Apple / Outlook calendar</button>
     <a class="btn block ghost" id="gcal" target="_blank" rel="noopener" style="margin-top:8px">Add to Google Calendar</a>
   </div>
 
   <div class="card">
-    <h2>🔔 App notifications</h2>
+    <h2><svg class="ico" aria-hidden="true"><use href="#i-bell"/></svg>App notifications</h2>
     <p class="muted small" id="n-status"></p>
     <button class="block" id="n-enable" style="margin-top:10px">Turn on notifications</button>
     <button class="block ghost" id="n-test" style="margin-top:8px">Send a test notification</button>
@@ -257,11 +293,11 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
 </main>
 
 <nav>
-  <button data-v="today" class="on"><span class="i">🏋️</span>Workout</button>
-  <button data-v="plan"><span class="i">🧭</span>Plan</button>
-  <button data-v="remind"><span class="i">⏰</span>Remind</button>
-  <button data-v="log"><span class="i">📈</span>Progress</button>
-  <button data-v="gear"><span class="i">⚙️</span>Gear</button>
+  <button data-v="today" class="on"><span class="i"><svg class="ico" aria-hidden="true"><use href="#i-dumbbell"/></svg></span>Workout</button>
+  <button data-v="plan"><span class="i"><svg class="ico" aria-hidden="true"><use href="#i-compass"/></svg></span>Plan</button>
+  <button data-v="remind"><span class="i"><svg class="ico" aria-hidden="true"><use href="#i-alarm"/></svg></span>Remind</button>
+  <button data-v="log"><span class="i"><svg class="ico" aria-hidden="true"><use href="#i-trend"/></svg></span>Progress</button>
+  <button data-v="gear"><span class="i"><svg class="ico" aria-hidden="true"><use href="#i-gear"/></svg></span>Gear</button>
 </nav>
 
 <!-- PLAYER -->
@@ -290,15 +326,15 @@ input[type=time],select{font:inherit;background:var(--card2);color:var(--text);b
     <div id="p-tip" class="small" style="color:var(--accent2);max-width:420px"></div>
   </div>
   <div class="pctl">
-    <button id="p-back">⏮</button>
+    <button id="p-back" aria-label="Previous"><svg class="ico" aria-hidden="true"><use href="#i-back"/></svg></button>
     <button class="primary" id="p-pause">Pause</button>
-    <button id="p-skip">⏭</button>
+    <button id="p-skip" aria-label="Skip"><svg class="ico" aria-hidden="true"><use href="#i-skip"/></svg></button>
   </div>
   <button class="ghost block" id="p-quit" style="margin-top:10px">End workout</button>
 </div>
 
 <div id="done">
-  <div class="big">🏆</div>
+  <div class="big"><svg class="ico" aria-hidden="true"><use href="#i-trophy"/></svg></div>
   <h1 id="d-title">Workout complete!</h1>
   <p class="muted" id="d-sub"></p>
   <div class="note" id="d-notes" style="display:none;text-align:left;max-width:360px;width:100%"></div>
@@ -411,7 +447,7 @@ const SCIENCE = [
   {t:'Cardio target: 75–150 min vigorous (or 150–300 moderate) per week', b:'WHO recommends 150–300 min of moderate activity a week, or 75–150 min of vigorous activity, or a mix. Jump rope and heavy-bag rounds count as vigorous, and timed circuits count as moderate to vigorous.', s:['who']},
   {t:'Warm up dynamic, stretch after', b:'Moving warm-ups (jogging, squats, inchworms) raise body temperature and prepare your joints. Save long static stretches for the cool-down, which is how every session here is built.', s:[]},
   {t:'Fat loss is mostly diet, and muscle protects you', b:'Workouts help, but fat loss mainly comes from eating a bit less than you burn. Lifting while you lose weight helps keep muscle. Research often points to roughly 1.6 g of protein per kg of bodyweight a day for people training to build or keep muscle.', s:[]},
-  {t:'Soreness vs. pain', b:'Muscle soreness 1–3 days after a new workout (DOMS) is normal and fades as you adapt. Sharp, joint or one-sided pain is not normal: stop that move and swap it with ↻. Check with a doctor before starting if you have heart issues, chest pain or dizziness with exertion.', s:[]},
+  {t:'Soreness vs. pain', b:'Muscle soreness 1–3 days after a new workout (DOMS) is normal and fades as you adapt. Sharp, joint or one-sided pain is not normal: stop that move and swap it with the swap button. Check with a doctor before starting if you have heart issues, chest pain or dizziness with exertion.', s:[]},
 ];
 const COACH_TIPS = [
   'Lower each rep for 2–3 seconds. Slow negatives = more growth.',
@@ -427,10 +463,10 @@ const COACH_TIPS = [
 /* ================= PLAN QUESTIONNAIRE ================= */
 const QUESTIONS = [
   {k:'goal', q:'What\'s your main goal?', opts:[
-    ['muscle','💪 Build muscle','Look and feel more muscular'],
-    ['strength','🏋️ Get stronger','Lift more, move better'],
-    ['lean','🔥 Lose fat & get fitter','Burn more, build stamina'],
-    ['habit','✅ Build the habit','Feel better and stay consistent']]},
+    ['muscle','Build muscle','Look and feel more muscular'],
+    ['strength','Get stronger','Lift more, move better'],
+    ['lean','Lose fat & get fitter','Burn more, build stamina'],
+    ['habit','Build the habit','Feel better and stay consistent']]},
   {k:'exp', q:'How much have you trained lately?', opts:[
     ['new','Just starting','Little or no regular exercise recently'],
     ['some','On and off','Some workouts, not consistent'],
@@ -606,13 +642,14 @@ function ensurePlans(){
 }
 
 /* ================= RENDER: TODAY ================= */
+const ICO = n => `<svg class="ico" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 function exRow(e, i, swapAttr, extra){
   const tagCls = e.c==='cardio'?'cardio':e.c==='core'?'core':'';
   return `<div class="ex"><div class="num">${i}</div><div class="body">
     <div class="name">${esc(e.n)}</div>
     ${extra||''}<span class="tag ${tagCls}">${esc(e.w)}</span>
     <div class="muted small">${esc(e.cue)}</div></div>
-    ${swapAttr?`<button class="icon-btn" ${swapAttr} title="Swap">↻</button>`:''}</div>`;
+    ${swapAttr?`<button class="icon-btn" ${swapAttr} title="Swap" aria-label="Swap exercise"><svg class="ico" aria-hidden="true"><use href="#i-swap"/></svg></button>`:''}</div>`;
 }
 function planSession(){
   if(!S.plan) return null;
@@ -631,20 +668,20 @@ function renderToday(){
   applyPlanSession();
   ensurePlans();
   const h = new Date().getHours();
-  $('#hello').textContent = h<12?'Good morning 💪':h<17?'Good afternoon 💪':'Good evening 💪';
+  $('#hello').textContent = h<12?'Good morning':h<17?'Good afternoon':'Good evening';
   // status banner
   const today = new Date(), dow = today.getDay();
   const doneToday = S.log.some(l => l.date===dkey());
   const wk = weekCount(), goal = S.days.length || 3;
   const planned = S.days.includes(dow);
   let cls='calm', msg;
-  if(doneToday){ cls='done'; msg='<b>Done for today.</b> That\'s how it\'s built. 🙌'; }
+  if(doneToday){ cls='done'; msg='<b>Done for today.</b> That\'s how it\'s built.'; }
   else if(planned){ cls=''; msg=`<b>Today is a workout day.</b> ${wk>=goal?'You already hit your goal — bonus round!':`Just press start. ${S.plan ? sessionMins(S.plan, planSession().s) : 6+rounds()*6} minutes. Go.`}`; }
-  else { msg = wk>=goal ? '<b>Rest day.</b> You hit your goal this week. 🎉' : `<b>Not a scheduled day</b> — but ${goal-wk} to go this week. A bonus session counts!`; }
+  else { msg = wk>=goal ? '<b>Rest day.</b> You hit your goal this week.' : `<b>Not a scheduled day</b> — but ${goal-wk} to go this week. A bonus session counts!`; }
   const ps = planSession();
-  const planHtml = ps ? `<div class="plan-line">📋 <b>Week ${ps.week}</b> · Session ${ps.idx+1} of ${S.plan.sessions.length}: <b>${sessionLabel(S.plan, ps.s)}</b> · ${sessionMins(S.plan, ps.s)} min
-      <button class="block" id="plan-go" style="margin-top:10px;background:#fff;color:#111;font-weight:700">▶ Start today's plan session</button></div>`
-    : `<div class="plan-line"><button class="block" id="plan-quiz" style="background:rgba(255,255,255,.15);color:#fff">🧭 Get a personal plan (4 quick questions)</button></div>`;
+  const planHtml = ps ? `<div class="plan-line">${ICO('clip')} <b>Week ${ps.week}</b> · Session ${ps.idx+1} of ${S.plan.sessions.length}: <b>${sessionLabel(S.plan, ps.s)}</b> · ${sessionMins(S.plan, ps.s)} min
+      <button class="block" id="plan-go" style="margin-top:10px;background:#fff;color:#111;font-weight:700">${ICO('play')} Start today's plan session</button></div>`
+    : `<div class="plan-line"><button class="block" id="plan-quiz" style="background:rgba(255,255,255,.15);color:#fff">${ICO('compass')} Get a personal plan (4 quick questions)</button></div>`;
   $('#c-title').textContent = `${6+rounds()*6}-min Circuit`;
   $('#status').innerHTML = `<div class="banner ${cls}">${msg}${planHtml}
     <div class="stats"><div class="stat"><b>${wk}/${goal}</b><span>this week</span></div>
@@ -654,13 +691,13 @@ function renderToday(){
   // circuit
   const L = LEVELS[S.level];
   const reps = S.mode==='reps', R = repRest();
-  $('#mode-chips').innerHTML = `<button class="chip ${!reps?'on':''}" data-mode="timed">⏱ Timed</button><button class="chip ${reps?'on':''}" data-mode="reps">🔢 Reps</button>`;
+  $('#mode-chips').innerHTML = `<button class="chip ${!reps?'on':''}" data-mode="timed"><svg class="ico" aria-hidden="true"><use href="#i-timer"/></svg> Timed</button><button class="chip ${reps?'on':''}" data-mode="reps"><svg class="ico" aria-hidden="true"><use href="#i-hash"/></svg> Reps</button>`;
   $('#focus-chips').innerHTML = Object.entries(FOCUS).map(([k,f]) => `<button class="chip ${S.focus===k?'on':''}" data-focus="${k}">${f.label}</button>`).join('');
   $('#c-meta').textContent = reps ? `${FOCUS[S.focus].label} · ${rounds()} rounds · reps · ${R.move}s rest between moves`
                                   : `${FOCUS[S.focus].label} · ${rounds()} rounds · ${L.work}s on / ${L.rest}s off`;
   $('#c-list').innerHTML = S.circuit.ex.map((n,i)=>{
     const e = byName(n);
-    const extra = reps ? `<span class="tag reps">${repLabel(e)}</span>${goHeavier(e)?'<span class="tag core">⬆ go heavier</span>':''}` : '';
+    const extra = reps ? `<span class="tag reps">${repLabel(e)}</span>${goHeavier(e)?'<span class="tag core"><svg class="ico" aria-hidden="true"><use href="#i-up"/></svg> go heavier</span>':''}` : '';
     return exRow(e, i+1, `data-swap="${i}"`, extra);
   }).join('');
   $('#c-format').innerHTML = reps
@@ -746,7 +783,7 @@ function enterStep(i){
     const last = lastSets(s.n);
     $('#r-last').textContent = last ? `Last time: ${last.join(' · ')}` : 'Did more or fewer? Fix it with − / + before tapping Done.';
   }
-  $('#p-pause').textContent = isReps ? '✓ Done' : (P.paused ? 'Resume' : 'Pause');
+  $('#p-pause').innerHTML = isReps ? ICO('check')+' Done' : (P.paused ? 'Resume' : 'Pause');
   $('#p-kind').textContent = s.kind==='work' ? 'Work · '+s.label : isReps ? 'Reps · '+s.label : s.kind==='rest' ? 'Rest' : s.label;
   $('#p-name').textContent = s.n;
   $('#p-weight').textContent = s.w || '';
@@ -762,9 +799,9 @@ function enterStep(i){
     $('#p-next').innerHTML = s.next ? `Then: ${esc(s.next.kind==='rest' && s.next.next ? s.next.next.n : s.next.n)}` : 'Last one!';
     say(isReps ? `${s.n}. ${s.target} reps${s.side?' each side':''}` : s.n);
   }
-  $('#p-tip').textContent = isReps
-    ? (S.plan && S.plan.goal==='strength' ? '🎯 Lower for 3 sec, then drive up hard.' : '🎯 Lower for 2–3 sec · stop with 1–2 good reps left.')
-    : (s.kind==='rest' && s.dur>=20 ? '💡 ' + rand(COACH_TIPS) : '');
+  $('#p-tip').innerHTML = isReps
+    ? (S.plan && S.plan.goal==='strength' ? ICO('target')+' Lower for 3 sec, then drive up hard.' : ICO('target')+' Lower for 2–3 sec · stop with 1–2 good reps left.')
+    : (s.kind==='rest' && s.dur>=20 ? ICO('bulb') + ' ' + esc(rand(COACH_TIPS)) : '');
   if(i>0){ beep(s.kind==='work'?1200:660, 350, .3); vibrate(s.kind==='work'?[200,80,200]:[300]); }
   renderTick();
 }
@@ -792,7 +829,7 @@ function renderTick(){
     $('#p-arc').setAttribute('stroke-dashoffset', 653.45 * (1 - P.remain / s.dur));
   }
   if(P.hasReps){
-    $('#p-left').textContent = '⏱ ' + fmt(P.elapsed);
+    $('#p-left').innerHTML = ICO('timer') + ' ' + fmt(P.elapsed);
     $('#p-bar div').style.width = (100*P.i/P.steps.length)+'%';
     return;
   }
@@ -825,9 +862,9 @@ function finishWorkout(complete){
       const e = byName(n), t = target(e), got = arr.filter(x=>x!=null);
       if(!got.length) return;
       if(got.length >= rounds() && got.every(x=>x>=t)){
-        if(t < e.base + REP_CAP){ S.targets[n] = t+1; notes.push(`⬆ ${n}: ${t+1} reps next time`); }
-        else notes.push(`💪 ${n}: maxed out — use a heavier DB or band`);
-      } else if(got.some(x=>x < t-2)){ S.targets[n] = Math.max(Math.ceil(e.base/2), t-1); notes.push(`${n}: ${S.targets[n]} reps next time`); }
+        if(t < e.base + REP_CAP){ S.targets[n] = t+1; notes.push(['up', `${n}: ${t+1} reps next time`]); }
+        else notes.push(['bolt', `${n}: maxed out — use a heavier DB or band`]);
+      } else if(got.some(x=>x < t-2)){ S.targets[n] = Math.max(Math.ceil(e.base/2), t-1); notes.push([null, `${n}: ${S.targets[n]} reps next time`]); }
     });
   }
   S.log.push(entry);
@@ -839,9 +876,9 @@ function finishWorkout(complete){
   say(complete ? 'Workout complete. Great job.' : 'Logged. Every minute counts.');
   $('#d-title').textContent = complete ? 'Workout complete!' : 'Logged — nice work';
   const wk = weekCount(), goal = S.days.length||3;
-  $('#d-sub').textContent = `${mins} minutes. ${wk}/${goal} this week.` + (wk===goal ? ' Weekly goal hit! 🎉' : wk>goal ? ' Above and beyond.' : '');
+  $('#d-sub').textContent = `${mins} minutes. ${wk}/${goal} this week.` + (wk===goal ? ' Weekly goal hit!' : wk>goal ? ' Above and beyond.' : '');
   $('#d-notes').style.display = notes.length ? '' : 'none';
-  $('#d-notes').innerHTML = '<b>Next time</b><br>' + notes.map(esc).join('<br>');
+  $('#d-notes').innerHTML = '<b>Next time</b><br>' + notes.map(([ic,t])=>(ic?ICO(ic)+' ':'')+esc(t)).join('<br>');
   $('#done').classList.add('on');
 }
 
@@ -865,7 +902,7 @@ function renderLog(){
   for(let i=0;i<7;i++){
     const d = new Date(ws); d.setDate(d.getDate()+i); const k = dkey(d);
     const hit = dates.has(k); if(hit) cnt++;
-    html += `<div class="day">${DAYS[d.getDay()]}<div class="dot ${hit?'hit':''} ${S.days.includes(d.getDay())?'plan':''} ${k===tk?'today':''}">${hit?'✓':d.getDate()}</div></div>`;
+    html += `<div class="day">${DAYS[d.getDay()]}<div class="dot ${hit?'hit':''} ${S.days.includes(d.getDay())?'plan':''} ${k===tk?'today':''}">${hit?ICO('check'):d.getDate()}</div></div>`;
   }
   $('#week').innerHTML = html;
   $('#wk-count').textContent = `${cnt} / ${S.days.length||3} goal`;
@@ -908,17 +945,17 @@ function makeICS(){
   const start = firstOccurrence(), end = new Date(start.getTime()+45*60000);
   const now = new Date(); const stamp = now.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
   const lead = Number(S.lead);
-  const alarm = (trig) => ['BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Workout time 💪',`TRIGGER:${trig}`,'END:VALARM'];
+  const alarm = (trig) => ['BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Workout time',`TRIGGER:${trig}`,'END:VALARM'];
   const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Workout Nudge//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT',
     `UID:workout-nudge-${Date.now()}@local`, `DTSTAMP:${stamp}`, `DTSTART:${icsDate(start)}`, `DTEND:${icsDate(end)}`,
-    `RRULE:${rrule()}`, 'SUMMARY:💪 Workout time', 'DESCRIPTION:30-min circuit + 15-min cardio/abs. Open the Workout app and hit start.',
+    `RRULE:${rrule()}`, 'SUMMARY:Workout time', 'DESCRIPTION:30-min circuit + 15-min cardio/abs. Open the Workout app and hit start.',
     ...alarm('PT0M'), ...(lead ? alarm(`-PT${lead}M`) : []), 'END:VEVENT','END:VCALENDAR'];
   return lines.join('\r\n');
 }
 function gcalUrl(){
   if(!S.days.length) return '#';
   const start = firstOccurrence(), end = new Date(start.getTime()+45*60000);
-  const p = new URLSearchParams({action:'TEMPLATE', text:'💪 Workout time', details:'30-min circuit + 15-min cardio/abs. Open the Workout app and hit start.',
+  const p = new URLSearchParams({action:'TEMPLATE', text:'Workout time', details:'30-min circuit + 15-min cardio/abs. Open the Workout app and hit start.',
     dates:`${icsDate(start)}/${icsDate(end)}`, recur:'RRULE:'+rrule(), ctz:Intl.DateTimeFormat().resolvedOptions().timeZone||''});
   return 'https://calendar.google.com/calendar/render?'+p.toString();
 }
@@ -937,7 +974,7 @@ function reminderCheck(){
   const now = new Date(), [hh,mm] = S.time.split(':').map(Number);
   const due = new Date(); due.setHours(hh,mm,0,0); due.setMinutes(due.getMinutes()-Number(S.lead));
   if(S.days.includes(now.getDay()) && now>=due && S.notified!==dkey() && !S.log.some(l=>l.date===dkey())){
-    S.notified = dkey(); save(); notify('💪 Workout time', rand(NUDGES));
+    S.notified = dkey(); save(); notify('Workout time', rand(NUDGES));
   }
 }
 async function syncSW(){
@@ -966,17 +1003,17 @@ function planCard(p, preview){
   const sched = p.sessions.map((s,i)=>`<div class="sched"><div class="d">${DAYS[days[i]]}</div><div style="flex:1">${sessionLabel(p,s)}</div><div class="muted small">${sessionMins(p,s)}m</div></div>`).join('');
   const lvl = LEVELS[planLevel(p)].label;
   return `<div class="card">
-    <div class="row between"><div><h2>${GOAL_LABEL[p.goal]}</h2><div class="muted small">${p.days} days/week · ${preview?'Starts this week':'Week '+planWeek(p)} · Level: ${lvl}</div></div><div style="font-size:30px">${{muscle:'💪',strength:'🏋️',lean:'🔥',habit:'✅'}[p.goal]}</div></div>
+    <div class="row between"><div><h2>${GOAL_LABEL[p.goal]}</h2><div class="muted small">${p.days} days/week · ${preview?'Starts this week':'Week '+planWeek(p)} · Level: ${lvl}</div></div><div style="font-size:30px;color:var(--accent)">${ICO({muscle:'dumbbell',strength:'bolt',lean:'flame',habit:'check'}[p.goal])}</div></div>
     <h3>Your week</h3>${sched}
     <h3>Weekly dose</h3>
     <div class="dose"><div><b>${d.sets.Legs}</b><span>leg sets</span></div><div><b>${d.sets.Push}</b><span>push sets</span></div><div><b>${d.sets.Pull}</b><span>pull sets</span></div><div><b>${d.total}</b><span>active min</span></div></div>
     <h3>Why it's built this way</h3><ul class="why" style="padding-left:18px;margin:0">${planReasons(p).map(r=>`<li>${r}</li>`).join('')}</ul>
     ${preview
-      ? `<button class="primary block" id="plan-accept" style="margin-top:14px">✓ Start this plan</button>
+      ? `<button class="primary block" id="plan-accept" style="margin-top:14px">${ICO('check')} Start this plan</button>
          <p class="muted small" style="text-align:center">Sets your reminder days to ${days.map(x=>DAYS[x]).join(', ')}.</p>
-         <button class="block ghost" id="plan-retake">↺ Change my answers</button>`
-      : `<button class="primary block" id="plan-go2" style="margin-top:14px">▶ Start today's session</button>
-         <button class="block ghost" id="plan-retake" style="margin-top:8px">↺ Retake the quiz</button>
+         <button class="block ghost" id="plan-retake">Change my answers</button>`
+      : `<button class="primary block" id="plan-go2" style="margin-top:14px">${ICO('play')} Start today's session</button>
+         <button class="block ghost" id="plan-retake" style="margin-top:8px">Retake the quiz</button>
          <button class="block ghost" id="plan-stop" style="margin-top:8px;color:#ff8080">Stop following this plan</button>`}
   </div>`;
 }
@@ -995,12 +1032,12 @@ function renderPlan(){
   }
   else if(S.plan) box.innerHTML = planCard(S.plan, false);
   else box.innerHTML = `<div class="card">
-      <h2>🧭 Get a plan built for you</h2>
+      <h2>${ICO('compass')}Get a plan built for you</h2>
       <p class="muted">Answer 4 quick questions about your goal, experience and schedule. You'll get a weekly plan built for your dumbbells, bands, rope and bag, based on current exercise science.</p>
       <button class="primary block" id="q-start" style="margin-top:10px">Start (takes 30 seconds)</button>
       <p class="muted small" style="margin-top:10px">Heads up: if you have heart problems, chest pain, dizziness when exercising, or an injury, check with a doctor before starting.</p>
     </div>`;
-  $('#science').innerHTML = SCIENCE.map(x=>`<details class="sci"><summary>${x.t}</summary><p>${x.b}</p>${x.s.map(k=>`<a href="${SRC[k][1]}" target="_blank" rel="noopener">📄 ${SRC[k][0]}</a>`).join('')}</details>`).join('');
+  $('#science').innerHTML = SCIENCE.map(x=>`<details class="sci"><summary>${x.t}</summary><p>${x.b}</p>${x.s.map(k=>`<a href="${SRC[k][1]}" target="_blank" rel="noopener">${ICO('doc')} ${SRC[k][0]}</a>`).join('')}</details>`).join('');
 }
 function startPlanSession(){
   const ps = planSession(); if(!ps) return;
@@ -1088,14 +1125,14 @@ $('#n-enable').onclick = async ()=>{
   try{
     const p = await Notification.requestPermission();
     if(p==='granted'){
-      notify('You\'re set 💪','I\'ll nudge you on your workout days.');
+      notify('You\'re set','I\'ll nudge you on your workout days.');
       try{ const st = await navigator.permissions.query({name:'periodic-background-sync'});
         if(st.state==='granted' && swReg && swReg.periodicSync) await swReg.periodicSync.register('workout-reminder',{minInterval:60*60*1000}); }catch(e){}
     }
   }catch(e){ alert('Notifications aren\'t available here. On iPhone, add the app to your Home Screen first.'); }
   renderRemind();
 };
-$('#n-test').onclick = ()=>notify('💪 Workout time', rand(NUDGES));
+$('#n-test').onclick = ()=>notify('Workout time', rand(NUDGES));
 $('#g-rope').onchange = e=>{ S.rope=e.target.checked; S.cardio=genCardio(); save(); renderAll(); };
 $('#g-bag').onchange = e=>{ S.bag=e.target.checked; S.cardio=genCardio(); save(); renderAll(); };
 $('#g-voice').onchange = e=>{ S.voice=e.target.checked; save(); };

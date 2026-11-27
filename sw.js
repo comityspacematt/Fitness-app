@@ -1,5 +1,5 @@
 // Workout Nudge service worker: offline cache + best-effort background reminders.
-const CACHE = 'wn-app-v3';
+const CACHE = 'wn-app-v5';
 const ASSETS = ['./', 'index.html', 'manifest.json', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -36,7 +36,7 @@ async function checkReminder() {
   if (s.notified === today || (s.doneDates || []).includes(today)) return;
   s.notified = today;
   await c.put('state.json', new Response(JSON.stringify(s)));
-  await self.registration.showNotification('💪 Workout time', {
+  await self.registration.showNotification('Workout time', {
     body: "It's a workout day. 30 minutes — tap to start.",
     icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'workout', vibrate: [200, 100, 200]
   });
